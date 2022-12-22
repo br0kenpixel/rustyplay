@@ -53,8 +53,6 @@ impl LyricsProcessor {
     }
 
     /// Gets the line of lyrics that should be displayed at the given time.
-    /// Uses [`LyricsProcessor::find_lines()`](Self::find_lines()) to find two lines
-    /// that are closest to the given time. The first line is displayed, while the other is discarded.
     pub fn get_line(&self, time: Duration) -> Option<String> {
         for (i, j) in (0..self.lines.len()).zip(1..self.lines.len()) {
             let first = &self.lines[i];
