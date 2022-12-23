@@ -12,12 +12,20 @@
 This is a remade version of the original, which was written in C.  
 ⚠️ Playlist features (`Next`, `Previous`) are not implemented yet.
 
+## Parts
+- [`src/main.rs`](src/main.rs) - Contains the main entry point. You should start exploring from here.
+- [`src/audioinfo.rs`](src/audioinfo.rs) - Provides implementations for reading metadata from audio files.
+- [`src/lyrics.rs`](src/lyrics.rs) - The lyrics "engine."
+- [`src/player.rs`](src/player.rs) - Provides implementations for controlling the audio player.
+- [`src/display.rs`](src/display.rs) - Provides a high-level abstraction layer for creating and managing the UI.
+
 ## Running
 To run the player follow these steps:
 1. Clone this repo
     - `git clone https://github.com/br0kenpixel/rustyplay`
 2. Build the binary
     - `cargo build --release`
+    - > ⚠️ It's highly recommended to build in release mode for better performance!
 3. Run the binary like this:
     - `musicplayer [FILE]`
       - Example:
@@ -27,7 +35,8 @@ To run the player follow these steps:
 - WAV
 - OGG
 - FLAC
-  - > ⚠️ FLAC support is temporarily disabled due to issues with playback.
+  - > ~~⚠️ FLAC support is temporarily disabled due to issues with playback.~~
+  - > ✅ FLAC playback has been fixed thanks to [this](https://docs.rs/rusty_audio/1.4.0/src/rusty_audio/lib.rs.html#85)!
 
 ## Supported systems:
 As of now, it was only tested on macOS Monterey 12.6.1 (Intel). But theoretically it should work on any other OS, as all dependencies have cross-platform support.
