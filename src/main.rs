@@ -17,7 +17,7 @@ const SUPPORTED_FORMATS: [&str; 3] = ["wav", "flac", "ogg"];
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    
+
     if args.len() != 2 {
         eprintln!("Invalid arguments:");
         eprintln!("Usage:\n {} [FILE]", args[0]);
@@ -36,14 +36,9 @@ fn run(file: String) {
     let player: Player = Player::new(&file);
     let lyrics = LyricsProcessor::try_load_file(generate_lyrics_file_name(&file));
 
-    //TODO: Fix?
-    if afile.format == AudioFormat::FLAC {
-        eprintln!("Error: Playback of FLAC files has been disabled due to an issue with rodio.");
-        exit(1);
-    }
-
     /* Start UI */
     let display: Display = Display::new();
+    let mut display_event: DisplayEvent = DisplayEvent::Nothing;
     
     display.init();
 
@@ -84,28 +79,51 @@ fn run(file: String) {
         match display.getch() {
             None => (),
             Some(key) => {
-                match char::from_u32(key as u32).unwrap() {
-                    'g' => { player.play(); display.set_playback_status(!player.is_paused()); },
-                    'f' => (), //TODO
-                    'h' => (), //TODO
-                    'b' => { player.pause(); display.set_playback_status(!player.is_paused()); },
-                    'v' => {
-                        if player.is_muted() {
-                            player.unmute();
-                        } else {
-                            player.mute();
-                        }
-                    }
-                    'q' => break,
-                    _ => () /* unknown key */
+                display_event = match char::from_u32(key as u32).unwrap()  {
+                    'g' => DisplayEvent::MakePlay,
+                    'f' => DisplayEvent::JumpBack,
+                    'h' => DisplayEvent::JumpNext,
+                    'b' => DisplayEvent::MakePause,
+                    'v' => DisplayEvent::ToggleMute,
+                    'q' => DisplayEvent::Quit,
+                    _   => DisplayEvent::Nothing
                 }
             }
         }
+
+        process_display_event(display_event, &player, &display);
         sleep(Duration::from_millis(10));
     }
 
     player.destroy();
     display.destroy();
+}
+
+/// Process the current [`DisplayEvent`](DisplayEvent).
+fn process_display_event(event: DisplayEvent, player: &Player, display: &Display) {
+    use DisplayEvent::*;
+
+    match event {
+        MakePlay => {
+            player.play();
+            display.set_playback_status(true);
+        },
+        MakePause => {
+            player.pause();
+            display.set_playback_status(false);
+        },
+        ToggleMute => {
+            if player.is_muted() {
+                player.unmute();
+            } else {
+                player.mute();
+            }
+        },
+        JumpNext => (), //TODO: Implement
+        JumpBack => (), //TODO: Implement
+        Quit     => player.destroy(),
+        Nothing  => ()
+    }
 }
 
 /// Generates a file name for the lyrics file.  

@@ -12,6 +12,26 @@ pub struct Display {
     infoview: WINDOW
 }
 
+/// Represents different events that occur when
+/// using the keyboard controls.
+#[derive(PartialEq, Clone, Copy)]
+pub enum DisplayEvent {
+    /// Nothing to do (no key was pressed)
+    Nothing,
+    /// The program was requested to resume playback.
+    MakePlay,
+    /// The program was requested to pause playback.
+    MakePause,
+    /// The program was requested to jump to the next track in the queue.
+    JumpNext,
+    /// The program was requested to jump to the previous track in the queue.
+    JumpBack,
+    /// The program was requested to mute or unmute the audio.
+    ToggleMute,
+    /// The program was requested to stop playing and exit.
+    Quit
+}
+
 /// This implementation contains all the functions that are used to draw the TUI.
 impl Display {
     /// Creates the TUI and initializes [`ncurses`](ncurses).
