@@ -52,6 +52,8 @@ As of now, it was only tested on macOS Monterey 12.6.1 (Intel). But theoreticall
   - Provides a pausable/resumable clock type
 - [`json`](https://crates.io/crates/json)
   - Used to read lyrics files
+- [`itertools`](https://docs.rs/itertools/latest/itertools/index.html)
+  - Provides additional functions for iterating over arrays
 
 # Lyrics
 The time-synced lyrics are provided by Spotify/Musixmatch. In order to be able to use this feature, you must obtain a JSON file containing the time-synced lyrics data. Such data can be obtained by using either [`akashrchandran/spotify-lyrics-api`](https://github.com/akashrchandran/spotify-lyrics-api) or [`br0kenpixel/spotify-lyrics-api-rust`](https://github.com/br0kenpixel/spotify-lyrics-api-rust).
@@ -63,7 +65,8 @@ For example, if you run `musicplayer Documents/Music/hello.wav` then `Documents/
 
 ## "End time" support
 So far I haven't noticed any lyrics data with `endTimeMs` set, however if the lyrics contain a line with a singe `♪` character, the lyrics parser will automatically "adjust" the lyrics data. This line will be ingnored and it's `startTimeMs` is changed to the previous line's `endTimeMs`.
-For a quick overview, here's the snippet of the function that handles this "adjustment"/"cleanup":
+For a quick overview, here's the snippet of the function that handles this "adjustment"/"cleanup":  
+> ⚠️ This part of the code has been refactored, but the same algorithm applies. You can check the new implementation [here](https://github.com/br0kenpixel/rustyplay/blob/main/src/lyrics.rs#L64). If you want to check the old implementation, click [here](https://github.com/br0kenpixel/rustyplay/blob/2a923488ea6d2ca04e2118d81ef2030e4e6ef3b7/src/lyrics.rs#L92).
 ```rust
 let mut result: Vec<LyricsLine> = Vec::new();
 
@@ -87,7 +90,7 @@ If such a line is not found, this adjustment will not happen.
 You can use `cargo doc` to generate the documentation.  
 The "homepage" of the documentation is `target/doc/musicplayer/index.html`.
 
-# FAQ
+# FAQ/Troubleshooting
 <details>
   <summary>Why are MP3s and M4As not supported if rodio supports them?</summary>
   Even though rodio can play these files, the problem is sndfile, which does not support those formats.
@@ -101,7 +104,10 @@ The "homepage" of the documentation is `target/doc/musicplayer/index.html`.
   This is explained in the documentation, you can either generate it with cargo (as shown above) or check out the code.
 </details>
 <details>
-  <summary>Why are FLACs disabled?</summary>
-  I ran into an issue with playing back FLACs with sleep() being used. Until I figure out what's the problem, FLACs will not be playable.
-  Although if you really want to play them, you must remove the format check from the run() function and also remove the call to sleep() in the while loop.
+  <summary>I hear "crackling" when playing FLAC files.</summary>
+  This issue should now be fixed, if you're still experiencing it, first check if you're using a debug build. If yes, such behaviour can be expected. Please use release builds instead.
+</details>
+<details>
+  <summary>Why is it taking so long to open the player? ("Launching..." takes long)</summary>
+  The player is designed to first load all necessary content and only then start the UI. This design may increase startup time, but makes the player more responsive when handling the UI and user input. This way, the player is only doing one specific thing at once. Additionally, you should check if you're using a debug build, if yes, you should expect long startup times (15-20 secs). Please use release builds instead.
 </details>
