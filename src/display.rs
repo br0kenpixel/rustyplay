@@ -138,13 +138,13 @@ impl Display {
         const EXIT_CTL_TXT: &str = "[Q] Exit";
 
         self.moveto(LINES() - 3, 2);
-        self.print_control('F', "Prev", true);
+        //self.print_control('F', "Prev", true); // not implemented for now
         self.print_control('G', "Play", true);
-        self.print_control('H', "Next", false);
+        //self.print_control('H', "Next", false); // not implemented for now
         
-        self.moveto(LINES() - 2, 2);
-        self.print_control('V', "Mute", true);
-        self.print_control('B', "Pause", false);
+        //self.moveto(LINES() - 2, 2);
+        self.print_control('B', "Pause", true);
+        self.print_control('V', "Mute", false);
 
         self.moveto(LINES() - 2, COLS() - 2 - EXIT_CTL_TXT.len() as i32);
         self.addstr(EXIT_CTL_TXT);
@@ -304,13 +304,19 @@ impl Display {
     /// Calculate the progress bar blocks and print them to the TUI.
     pub fn set_progress(&self, played: f64, total_len: f64) {
         let max_block_count = ((COLS() - 12) - 15) - 1;
-        let mut use_blocks = Display::map(played, 0.0, total_len, 0.0, max_block_count as f64);
+        let mut use_blocks = Display::map(
+            played,
+            0.0,
+            total_len,
+            0.0,
+            max_block_count as f64
+        ) as i32;
 
         // Constrain
-        if use_blocks < 0.0f64 {
-            use_blocks = 0.0f64;
-        } else if use_blocks > max_block_count as f64 {
-            use_blocks = max_block_count as f64;
+        if use_blocks < 0 {
+            use_blocks = 0;
+        } else if use_blocks > max_block_count {
+            use_blocks = max_block_count;
         }
 
         self.print_progress_blocks(use_blocks as i32, max_block_count);
@@ -319,23 +325,21 @@ impl Display {
     /// Update the file quality display in the TUI.
     pub fn set_file_quality(&self, fileinfo: &AudioFile) {
         self.moveto(6, 4);
-        self.addstring(&format!("{} Hz, {}, {}",
+        self.addstring(&format!("{} Hz, {}, {} {}",
             fileinfo.sample_rate,
             match fileinfo.stereo {
                 true => "Stereo",
                 false => "Mono"
             },
-            format!("{} {}",
-                match fileinfo.lossless {
-                    true => "Lossless",
-                    false => "Lossy"
-                },
-                match fileinfo.format {
-                    AudioFormat::FLAC => "FLAC",
-                    AudioFormat::WAV  => "WAV",
-                    AudioFormat::OGG  => "OGG"
-                }
-            )
+            match fileinfo.lossless {
+                true => "Lossless",
+                false => "Lossy"
+            },
+            match fileinfo.format {
+                AudioFormat::FLAC => "FLAC",
+                AudioFormat::WAV  => "WAV",
+                AudioFormat::OGG  => "OGG"
+            }
         ));
     }
 

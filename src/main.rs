@@ -34,7 +34,7 @@ fn run(file: String) {
     /* Initialize everything first, so the UI doesn't appear laggy/frozen for too long */
     let afile: AudioFile = get_audio_info(&file);
     let player: Player = Player::new(&file);
-    let lyrics = LyricsProcessor::try_load_file(generate_lyrics_file_name(&file));
+    let lyrics = LyricsProcessor::load_file(generate_lyrics_file_name(&file));
 
     /* Start UI */
     let display: Display = Display::new();
@@ -53,7 +53,7 @@ fn run(file: String) {
     display.set_track_length(afile.length);
     display.set_file_quality(&afile);
 
-    if lyrics.is_none() {
+    if lyrics.is_err() {
         display.set_unavailable();
     }
 
@@ -64,7 +64,7 @@ fn run(file: String) {
         if !player.is_paused() {
             display.update_progress(player.playtime(), afile.length);
 
-            if !lyrics.is_none() {
+            if !lyrics.is_err() {
                 let line = lyrics.as_ref().unwrap().get_line(player.playtime());
                 if let Some(text) = line {
                     display.set_text(text);

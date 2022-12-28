@@ -98,7 +98,7 @@ fn _get_fmt(file: &String) -> AudioFormat {
     match ext.to_lowercase().as_str() {
         "flac" => AudioFormat::FLAC,
         "wav" => AudioFormat::WAV,
-        "OGG" => AudioFormat::OGG,
+        "ogg" => AudioFormat::OGG,
         _ => panic!("_get_fmt() failed")
     }
 }
@@ -118,9 +118,9 @@ fn _get_fmt(file: &String) -> AudioFormat {
 /// In case the read tag is not defined, `"Unknown"` is used as a placeholder.
 fn _get_meta(sndfile: &SndFile) -> AudioMeta {
     AudioMeta {
-        title: sndfile.get_tag(TagType::Title).unwrap_or(String::from("Unknown")),
-        album: sndfile.get_tag(TagType::Album).unwrap_or(String::from("Unknown")),
-        artist: sndfile.get_tag(TagType::Artist).unwrap_or(String::from("Unknown"))
+        title: sndfile.get_tag(TagType::Title).unwrap_or("Unknown".to_owned()),
+        album: sndfile.get_tag(TagType::Album).unwrap_or("Unknown".to_owned()),
+        artist: sndfile.get_tag(TagType::Artist).unwrap_or("Unknown".to_owned())
     }
 }
 

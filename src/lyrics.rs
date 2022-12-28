@@ -1,7 +1,9 @@
 use std::fs;
+use std::str;
 use std::path::Path;
 use std::time::{Duration};
 use json::*;
+use itertools::Itertools;
 
 /// Represents a line of lyrics.
 #[derive(Debug, Clone)]
@@ -27,37 +29,26 @@ impl LyricsProcessor {
     /// - [`akashrchandran/spotify-lyrics-api`](https://github.com/akashrchandran/spotify-lyrics-api)
     /// - [`br0kenpixel/spotify-lyrics-api-rust`](https://github.com/br0kenpixel/spotify-lyrics-api-rust)  
     /// `LRC`'s are not supported and likely never will be.
-    pub fn load_file(file: String) -> LyricsProcessor {
-        let content = fs::read(Path::new(&file)).expect("Cannot open LRC file");
-        let content = String::from_utf8(content).unwrap();
+    pub fn load_file(file: String) -> Result<LyricsProcessor> {
+        let content = fs::read(Path::new(&file)).expect("Cannot open lyrics file");
+        let content = str::from_utf8(&content).unwrap();
 
-        let json_content = match parse(content.as_str()) {
+        let json_content = match parse(content) {
             Ok(json) => json,
-            Err(e) => panic!("JSON parsing failed: {e}")
+            Err(e) => return Err(e)
         };
 
         assert!(json_content["error"] == false);
         let json_content = json_content["lines"].clone();
 
-        LyricsProcessor {
+        Ok(LyricsProcessor {
             lines: LyricsProcessor::parse_lines(json_content)
-        }
-    }
-
-    /// Alias for [`LyricsProcessor::load_file()`](Self::load_file()) that returns `None` if the file does not exist.
-    pub fn try_load_file(file: String) -> Option<LyricsProcessor> {
-        if !Path::new(&file).exists() {
-            return None;
-        }
-        Some(LyricsProcessor::load_file(file))
+        })
     }
 
     /// Gets the line of lyrics that should be displayed at the given time.
     pub fn get_line(&self, time: Duration) -> Option<String> {
-        for (i, j) in (0..self.lines.len()).zip(1..self.lines.len()) {
-            let first = &self.lines[i];
-            let second = &self.lines[j];
-
+        for (first, second) in self.lines.iter().tuple_windows() {
             if time >= first.time && time <= second.time {
                 if !first.end_time.is_none() && time >= first.end_time.unwrap() {
                     return None;
@@ -79,26 +70,23 @@ impl LyricsProcessor {
             let start_ms = &item["startTimeMs"].as_str().unwrap();
             let start_ms = start_ms.parse::<u64>().unwrap();
 
-            let words: &str = &item["words"].as_str().unwrap();
-            let words: String = String::from(words);
+            let words: String = item["words"].as_str().unwrap().to_owned();
+
+            if words == "♪" {
+                match result.get_mut(index - 1) {
+                    Some(line) => {
+                        line.end_time = Some(Duration::from_millis(start_ms));
+                    },
+                    None => ()
+                }
+                continue;
+            }
 
             result.push(LyricsLine {
                 time: Duration::from_millis(start_ms),
                 text: words,
                 end_time: None
             });
-        }
-
-        let mut index = 0;
-        while index < result.len() {
-            let current = result[index].clone();
-            if current.text == "♪" {
-                let mut previous = result.get_mut(index - 1).unwrap();
-                previous.end_time = Some(current.time);
-                result.remove(index);
-            } else {
-                index += 1;
-            }
         }
 
         result
