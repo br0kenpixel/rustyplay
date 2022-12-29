@@ -38,7 +38,7 @@ fn run(file: String) {
 
     /* Start UI */
     let display: Display = Display::new();
-    let mut display_event: DisplayEvent = DisplayEvent::Nothing;
+    let mut display_event: DisplayEvent;
     
     display.init();
 
@@ -55,6 +55,7 @@ fn run(file: String) {
 
     if lyrics.is_err() {
         display.set_unavailable();
+        display.refresh();
     }
 
     display.set_playback_status(true);
@@ -76,10 +77,10 @@ fn run(file: String) {
         }
         
         // Getch will also refresh the display
-        match display.getch() {
-            None => (),
+        display_event = match display.getch() {
+            None => DisplayEvent::Nothing,
             Some(key) => {
-                display_event = match char::from_u32(key as u32).unwrap()  {
+                match char::from_u32(key as u32).unwrap() {
                     'g' => DisplayEvent::MakePlay,
                     'f' => DisplayEvent::JumpBack,
                     'h' => DisplayEvent::JumpNext,
@@ -89,7 +90,7 @@ fn run(file: String) {
                     _   => DisplayEvent::Nothing
                 }
             }
-        }
+        };
 
         process_display_event(display_event, &player, &display);
         sleep(Duration::from_millis(10));

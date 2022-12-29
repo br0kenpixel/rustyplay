@@ -2,7 +2,7 @@ use std::fs;
 use std::str;
 use std::path::Path;
 use std::time::{Duration};
-use json::*;
+use json::{parse, JsonValue};
 use itertools::Itertools;
 
 /// Represents a line of lyrics.
@@ -29,13 +29,15 @@ impl LyricsProcessor {
     /// - [`akashrchandran/spotify-lyrics-api`](https://github.com/akashrchandran/spotify-lyrics-api)
     /// - [`br0kenpixel/spotify-lyrics-api-rust`](https://github.com/br0kenpixel/spotify-lyrics-api-rust)  
     /// `LRC`'s are not supported and likely never will be.
-    pub fn load_file(file: String) -> Result<LyricsProcessor> {
-        let content = fs::read(Path::new(&file)).expect("Cannot open lyrics file");
+    pub fn load_file(file: String) -> Result<LyricsProcessor, String> {
+        let Ok(content) = fs::read(Path::new(&file)) else {
+            return Err("Can't find lyrics file".to_owned());
+        };
         let content = str::from_utf8(&content).unwrap();
 
         let json_content = match parse(content) {
             Ok(json) => json,
-            Err(e) => return Err(e)
+            Err(e) => return Err(format!("JSON parse error: {e}"))
         };
 
         assert!(json_content["error"] == false);
