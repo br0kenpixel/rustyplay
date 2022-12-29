@@ -67,7 +67,7 @@ For example, if you run `musicplayer Documents/Music/hello.wav` then `Documents/
 ## "End time" support
 So far I haven't noticed any lyrics data with `endTimeMs` set, however if the lyrics contain a line with a singe `♪` character, the lyrics parser will automatically "adjust" the lyrics data. This line will be ingnored and it's `startTimeMs` is changed to the previous line's `endTimeMs`.
 For a quick overview, here's the snippet of the function that handles this "adjustment"/"cleanup":  
-> ⚠️ This part of the code has been refactored, but the same algorithm applies. You can check the new implementation [here](https://github.com/br0kenpixel/rustyplay/blob/main/src/lyrics.rs#L64). If you want to check the old implementation, click [here](https://github.com/br0kenpixel/rustyplay/blob/2a923488ea6d2ca04e2118d81ef2030e4e6ef3b7/src/lyrics.rs#L92).
+> ⚠️ This part of the code has been refactored, but the same algorithm applies. You can check the new implementation [here](https://github.com/br0kenpixel/rustyplay/blob/main/src/lyrics.rs#L66). If you want to check the old implementation, click [here](https://github.com/br0kenpixel/rustyplay/blob/2a923488ea6d2ca04e2118d81ef2030e4e6ef3b7/src/lyrics.rs#L92).
 ```rust
 let mut result: Vec<LyricsLine> = Vec::new();
 
