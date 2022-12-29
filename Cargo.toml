@@ -1,6 +1,6 @@
 [package]
 name = "musicplayer"
-version = "1.0.1"
+version = "1.0.2"
 edition = "2021"
 authors = ["Fábián Varga", "Fábián Varga <varga2mail@gmail.com>"]
 description = "A terminal-based music player."

@@ -6,6 +6,7 @@ use std::time::Duration;
 mod audioinfo;
 use crate::audioinfo::*;
 mod display;
+mod timer;
 use crate::display::*;
 mod player;
 use crate::player::*;
@@ -37,7 +38,7 @@ fn run(file: String) {
     let lyrics = LyricsProcessor::load_file(generate_lyrics_file_name(&file));
 
     /* Start UI */
-    let display: Display = Display::new();
+    let mut display: Display = Display::new();
     let mut display_event: DisplayEvent;
     
     display.init();
@@ -75,6 +76,8 @@ fn run(file: String) {
                 display.refresh_infoview();
             }
         }
+
+        display.staus_message_tick();
         
         // Getch will also refresh the display
         display_event = match display.getch() {
@@ -87,12 +90,12 @@ fn run(file: String) {
                     'b' => DisplayEvent::MakePause,
                     'v' => DisplayEvent::ToggleMute,
                     'q' => DisplayEvent::Quit,
-                    _   => DisplayEvent::Nothing
+                    _   => DisplayEvent::Invalid
                 }
             }
         };
 
-        process_display_event(display_event, &player, &display);
+        process_display_event(display_event, &player, &mut display);
         sleep(Duration::from_millis(10));
     }
 
@@ -101,27 +104,34 @@ fn run(file: String) {
 }
 
 /// Process the current [`DisplayEvent`](DisplayEvent).
-fn process_display_event(event: DisplayEvent, player: &Player, display: &Display) {
+fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Display) {
     use DisplayEvent::*;
 
     match event {
         MakePlay => {
             player.play();
             display.set_playback_status(true);
+            display.set_status_message("Resumed", None);
         },
         MakePause => {
             player.pause();
             display.set_playback_status(false);
+            display.set_status_message("Paused", None);
         },
         ToggleMute => {
             if player.is_muted() {
                 player.unmute();
+                display.set_status_message("Unmuted", None);
             } else {
                 player.mute();
+                display.set_status_message("Muted", None);
             }
         },
         JumpNext => (), //TODO: Implement
         JumpBack => (), //TODO: Implement
+        Invalid => {
+            display.set_status_message("Unknown command", None);
+        },
         Quit     => player.destroy(),
         Nothing  => ()
     }

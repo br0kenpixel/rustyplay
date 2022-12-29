@@ -1,15 +1,21 @@
 use ncurses::*;
 use crate::audioinfo::{AudioMeta, AudioFile, AudioFormat};
+use crate::timer::Timer;
 use std::time::Duration;
 
 /// Title string
 const HEADER: &str = "[br0kenpixel's Music Player]";
 /// Used to adjust the location of the `Lyrics` subwindow.
 const INFOVIEW_OFFSET: i32 = 8;
+/// Used to adjust the location of the status message.
+const STATUSMSG_OFFSET: i32 = 6;
+/// The default display time for a status message in seconds.
+const STATUSMSG_DEFTIME: u64 = 2;
 
 /// Represents the terminal UI (TUI)
 pub struct Display {
-    infoview: WINDOW
+    infoview: WINDOW,
+    message_timer: Option<Timer>
 }
 
 /// Represents different events that occur when
@@ -28,6 +34,8 @@ pub enum DisplayEvent {
     JumpBack,
     /// The program was requested to mute or unmute the audio.
     ToggleMute,
+    /// The user pressed a key which is not bound to any command.
+    Invalid,
     /// The program was requested to stop playing and exit.
     Quit
 }
@@ -46,7 +54,8 @@ impl Display {
         curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
 
         Display {
-            infoview: newwin(6, COLS() - 8, INFOVIEW_OFFSET, 4)
+            infoview: newwin(6, COLS() - 8, INFOVIEW_OFFSET, 4),
+            message_timer: None
         }
     }
 
@@ -369,6 +378,55 @@ impl Display {
             (seconds / 60.0) as i32,
             (seconds % 60.0) as i32
         ));
+    }
+
+    /// Displays a message on the bottom of the screen for a given amount of time.
+    /// If there is another message being displayed, it will be cleared.
+    /// If `time` is not specified (set to `None`), [`STATUSMSG_DEFTIME`](STATUSMSG_DEFTIME)
+    /// is used as a default value.
+    pub fn set_status_message(&mut self, message: &str, time: Option<Duration>) {
+        let message = format!("[ {message} ]");
+        let xpos = (COLS() / 2) - (message.len() as i32 / 2);
+
+        if !self.message_timer.is_none() {
+            self.clear_status_message();
+        }
+        
+        self.moveto(LINES() - STATUSMSG_OFFSET, xpos);
+        attr_on(A_STANDOUT());
+        self.addstring(&message);
+        attr_off(A_STANDOUT());
+        self.message_timer = Some(Timer::new(time.unwrap_or(Duration::from_secs(STATUSMSG_DEFTIME))));
+    }
+
+    /// Clears the currently displayed status message.
+    ///  
+    /// ## Note
+    /// Can be safely called even if there is no status message being
+    /// displayed, as in such cases the function will not do anything.
+    pub fn clear_status_message(&mut self) {
+        if self.message_timer.is_none() {
+            return;
+        }
+        self.message_timer = None;
+        self.moveto(LINES() - STATUSMSG_OFFSET, 1);
+        self.addnch(' ' as u32, COLS() - 4);
+    }
+
+    /// Checks if the currently displayed status message
+    /// expired. If yes, it will be cleared, otherwise nothing will be done.
+    /// 
+    /// ## Note #1
+    /// Can be safely called even if there is no status message being
+    /// displayed, as in such cases the function will not do anything.
+    /// ## Note #2
+    /// For good accuracy, this function should be called as often as possible.
+    pub fn staus_message_tick(&mut self) {
+        if let Some(timer) = &self.message_timer {
+            if timer.expired() {
+                self.clear_status_message();
+            }
+        }
     }
 }
 
