@@ -5,6 +5,7 @@ use std::time::Duration;
 
 mod audioinfo;
 use crate::audioinfo::*;
+mod scrolledbuf;
 mod display;
 mod timer;
 use crate::display::*;
@@ -38,7 +39,7 @@ fn run(file: String) {
     let lyrics = LyricsProcessor::load_file(generate_lyrics_file_name(&file));
 
     /* Start UI */
-    let mut display: Display = Display::new();
+    let mut display: Display = Display::new(&file);
     let mut display_event: DisplayEvent;
     
     display.init();
@@ -65,6 +66,7 @@ fn run(file: String) {
     while !player.is_finished() {
         if !player.is_paused() {
             display.update_progress(player.playtime(), afile.length);
+            display.handle_scroll();
 
             if !lyrics.is_err() {
                 let line = lyrics.as_ref().unwrap().get_line(player.playtime());

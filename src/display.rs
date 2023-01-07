@@ -1,6 +1,8 @@
 use ncurses::*;
 use crate::audioinfo::{AudioMeta, AudioFile, AudioFormat};
+use crate::scrolledbuf::*;
 use crate::timer::Timer;
+use std::path::Path;
 use std::time::Duration;
 
 /// Title string
@@ -11,10 +13,20 @@ const INFOVIEW_OFFSET: i32 = 8;
 const STATUSMSG_OFFSET: i32 = 6;
 /// The default display time for a status message in seconds.
 const STATUSMSG_DEFTIME: u64 = 2;
+/// Amount of time to wait before scrolling the text in milliseconds.
+const SCROLL_SHORT_TIME: u64 = 200;
+/// Amount of time to wait before reversing the scroll direction.
+const SCROLL_PAUSE_TIME: u64 = 3000;
 
 /// Represents the terminal UI (TUI)
 pub struct Display {
+    /// Lyrics subwindow
     infoview: WINDOW,
+    /// Scrollable text (used to scroll the file name across the UI)
+    scrolledname: ScrolledBuf,
+    /// Timer that handles scrolling
+    scroll_timer: Timer,
+    /// Timer that handles removing the status message after it's expired
     message_timer: Option<Timer>
 }
 
@@ -44,7 +56,7 @@ pub enum DisplayEvent {
 impl Display {
     /// Creates the TUI and initializes [`ncurses`](ncurses).
     /// This function __does not__ draw the static components of the TUI.
-    pub fn new() -> Display {
+    pub fn new(file: &String) -> Display {
         let locale_conf = LcCategory::all;
         setlocale(locale_conf, "en_US.UTF-8");
 
@@ -53,8 +65,18 @@ impl Display {
         timeout(0);
         curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
 
+        let filename = 
+            Path::new(file)
+            .file_name()
+            .unwrap()
+            .to_owned()
+            .into_string()
+            .unwrap();
+
         Display {
             infoview: newwin(6, COLS() - 8, INFOVIEW_OFFSET, 4),
+            scrolledname: ScrolledBuf::new(filename, COLS() - 8, ScrollDirection::LeftToRight),
+            scroll_timer: Timer::new(Duration::from_millis(SCROLL_SHORT_TIME)),
             message_timer: None
         }
     }
@@ -427,6 +449,22 @@ impl Display {
                 self.clear_status_message();
             }
         }
+    }
+
+    /// Handles scrolling the file name
+    /// This function should be called as often as possible
+    /// for accurately timed scrolling.
+    pub fn handle_scroll(&mut self) {
+        if !self.scroll_timer.expired() { return; }
+        self.moveto(INFOVIEW_OFFSET + 7, 4);
+        self.addstr(&self.scrolledname.current_frame());
+        if self.scrolledname.is_finished() {
+            self.scrolledname.swap_direction();
+            self.scroll_timer.rebuild(Duration::from_millis(SCROLL_PAUSE_TIME));
+        } else {
+            self.scroll_timer.rebuild(Duration::from_millis(SCROLL_SHORT_TIME));
+        }
+        self.scrolledname.next_frame();
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "musicplayer"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2021"
 authors = ["Fábián Varga", "Fábián Varga <varga2mail@gmail.com>"]
 description = "A terminal-based music player."
@@ -11,7 +11,7 @@ rodio = "0.16.0"
 sndfile = "0.1.1"
 ncurses = { version = "5.101.0", features = ["wide"] }
 pausable_clock = "1.0.1"
-json = "*"
+json = "0.12.4"
 itertools = "0.10.5"
 
 [profile.release]

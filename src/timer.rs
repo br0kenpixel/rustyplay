@@ -19,6 +19,19 @@ impl Timer {
         }
     }
 
+    /// Resets/Restarts the timer by setting the internal
+    /// [`start`](Self::start) time to [`Instant::now()`](Instant::now())
+    pub fn reset(&mut self) {
+        self.start = Instant::now();
+    }
+
+    /// Similar to [`reset()`](Self::reset), but also
+    /// allows changing the duration.
+    pub fn rebuild(&mut self, len: Duration) {
+        self.len = len;
+        self.reset();
+    }
+
     /// Returns whether the timer has expired.
     pub fn expired(&self) -> bool {
         Instant::now() - self.start >= self.len
