@@ -19,6 +19,7 @@ This is a remade version of the original, which was written in C.
 - [`src/player.rs`](src/player.rs) - Provides implementations for controlling the audio player.
 - [`src/display.rs`](src/display.rs) - Provides a high-level abstraction layer for creating and managing the UI.
 - [`src/timer.rs`](src/timer.rs) - Provides a simple timer/countdown object.
+- [`src/scrolledbuf.rs`](src/scrolledbuf.rs) - Provides an object for scrolling text.
 
 ## Running
 To run the player follow these steps:
