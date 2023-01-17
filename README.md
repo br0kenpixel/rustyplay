@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="460" height="300" src="img/tui.gif">
+  <img width="460" height="300" src="https://github.com/br0kenpixel/rustyplay/blob/e01ac615b1e6b7cfb640e4426093c2a6787c1e89/img/tui.gif">
 </p>
 <p align="center">
   <strong>br0kenpixel's Music Player</strong>
@@ -21,7 +21,13 @@ This is a remade version of the original, which was written in C.
 - [`src/timer.rs`](src/timer.rs) - Provides a simple timer/countdown object.
 - [`src/scrolledbuf.rs`](src/scrolledbuf.rs) - Provides an object for scrolling text.
 
-## Running
+## Building
+First make sure you have the Rust toolchain installed.  
+If not, use the following command on *nix based systems:  
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
 To run the player follow these steps:
 1. Clone this repo
     - `git clone https://github.com/br0kenpixel/rustyplay`
@@ -32,6 +38,8 @@ To run the player follow these steps:
     - `musicplayer [FILE]`
       - Example:
       - `musicplayer call_me.wav`
+4. You can also build the documentation:
+    - `cargo doc --open`
 
 ## Supported audio formats
 - WAV
@@ -54,8 +62,7 @@ As of now, it was only tested on macOS Monterey 12.6.1 (Intel). But theoreticall
   - Provides a pausable/resumable clock type
 - [`json`](https://crates.io/crates/json)
   - Used to read lyrics files
-- [`itertools`](https://docs.rs/itertools/latest/itertools/index.html)
-  - Provides additional functions for iterating over arrays
+> ℹ️ Dependency `itertools` was removed in 1.0.4.
 
 # Lyrics
 The time-synced lyrics are provided by Spotify/Musixmatch. In order to be able to use this feature, you must obtain a JSON file containing the time-synced lyrics data. Such data can be obtained by using either [`akashrchandran/spotify-lyrics-api`](https://github.com/akashrchandran/spotify-lyrics-api) or [`br0kenpixel/spotify-lyrics-api-rust`](https://github.com/br0kenpixel/spotify-lyrics-api-rust).
@@ -66,9 +73,9 @@ First, you need to use one of the tools listed above to obtain the lyrics data f
 For example, if you run `musicplayer Documents/Music/hello.wav` then `Documents/Music/hello.json` __must__ be a valid path and this file must contain the lyrics data obtained from Spotify. If this `.json` file does not exist, lyrics functionality will be disabled, however playback will work. If the `.json` file contains invalid data, the program will [`panic!()`](https://doc.rust-lang.org/std/macro.panic.html).
 
 ## "End time" support
-So far I haven't noticed any lyrics data with `endTimeMs` set, however if the lyrics contain a line with a singe `♪` character, the lyrics parser will automatically "adjust" the lyrics data. This line will be ingnored and it's `startTimeMs` is changed to the previous line's `endTimeMs`.
+So far I haven't noticed any lyrics data with `endTimeMs` set, however if the lyrics contain a line with a singe `♪` character (or is empty), the lyrics parser will automatically "adjust" the lyrics data. This line will be ingnored and it's `startTimeMs` is changed to the previous line's `endTimeMs`.
 For a quick overview, here's the snippet of the function that handles this "adjustment"/"cleanup":  
-> ⚠️ This part of the code has been refactored, but the same algorithm applies. You can check the new implementation [here](https://github.com/br0kenpixel/rustyplay/blob/main/src/lyrics.rs#L66). If you want to check the old implementation, click [here](https://github.com/br0kenpixel/rustyplay/blob/2a923488ea6d2ca04e2118d81ef2030e4e6ef3b7/src/lyrics.rs#L92).
+> ⚠️ This part of the code has been refactored, but the same algorithm applies. You can check the new implementation [here](https://github.com/br0kenpixel/rustyplay/blob/main/src/lyrics.rs#L117). If you want to check the old implementation, click [here](https://github.com/br0kenpixel/rustyplay/blob/2a923488ea6d2ca04e2118d81ef2030e4e6ef3b7/src/lyrics.rs#L92).
 ```rust
 let mut result: Vec<LyricsLine> = Vec::new();
 
