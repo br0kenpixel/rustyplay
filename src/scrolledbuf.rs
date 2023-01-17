@@ -1,5 +1,5 @@
 /// Represents scrollable text.
-/// 
+///
 /// Example:
 /// ```rust
 /// let mut text = ScrolledBuf::new("Hello, world!", 6, ScrollDirection::LeftToRight);
@@ -19,7 +19,7 @@ pub struct ScrolledBuf {
     /// Scroll direction
     dir: ScrollDirection,
     /// Amount of visible characters
-    visible_len: isize
+    visible_len: isize,
 }
 
 /// Scroll direction
@@ -28,20 +28,20 @@ pub enum ScrollDirection {
     /// Scroll text from right to left
     RightToLeft,
     /// Scroll text from left to right
-    LeftToRight
+    LeftToRight,
 }
 
 impl ScrolledBuf {
     /// Creates a new scrollable text object.
-    /// 
+    ///
     /// # Arguments
     /// * `text` - Any object that can be converted to a [`String`](String) using `into()`
     /// * `visible` - Amount of visible charcters
     /// * `dir` - Scroll direction
-    /// 
+    ///
     /// ### Notes
     /// `visible` is converted to [`isize`](isize) internally.
-    /// 
+    ///
     /// Example:
     /// ```rust
     /// let mut text = ScrolledBuf::new("Hello, world!", 6, ScrollDirection::RightToLeft);
@@ -52,14 +52,14 @@ impl ScrolledBuf {
         let visible = visible as isize;
         let step = match dir {
             ScrollDirection::RightToLeft => -visible,
-            ScrollDirection::LeftToRight => text.len() as isize
+            ScrollDirection::LeftToRight => text.len() as isize,
         };
 
         Self {
             text,
             step,
             dir,
-            visible_len: visible
+            visible_len: visible,
         }
     }
 
@@ -70,22 +70,17 @@ impl ScrolledBuf {
 
         let start = self.step;
         let end = start + self.visible_len;
-        
+
         for i in start..end {
-            result.push(
-                self.text
-                    .chars()
-                    .nth(i as usize)
-                    .unwrap_or(' ')
-            );
+            result.push(self.text.chars().nth(i as usize).unwrap_or(' '));
         }
 
         result
     }
 
     /// Move to the next frame.  
-    /// *(Scrolls the text by one step.)* 
-    /// 
+    /// *(Scrolls the text by one step.)*
+    ///
     /// ### Note #1
     /// [`is_finished()`](Self::is_finished()) should be called to check
     /// if this function is safe to call.
@@ -95,7 +90,7 @@ impl ScrolledBuf {
     pub fn next_frame(&mut self) {
         match self.dir {
             ScrollDirection::RightToLeft => self.step += 1,
-            ScrollDirection::LeftToRight => self.step -= 1
+            ScrollDirection::LeftToRight => self.step -= 1,
         }
     }
 
@@ -105,7 +100,7 @@ impl ScrolledBuf {
     pub fn previous_frame(&mut self) {
         match self.dir {
             ScrollDirection::RightToLeft => self.step -= 1,
-            ScrollDirection::LeftToRight => self.step += 1
+            ScrollDirection::LeftToRight => self.step += 1,
         }
     }
 
@@ -114,7 +109,7 @@ impl ScrolledBuf {
     pub fn reset(&mut self) {
         self.step = match self.dir {
             ScrollDirection::RightToLeft => -self.visible_len,
-            ScrollDirection::LeftToRight => self.text.len() as isize
+            ScrollDirection::LeftToRight => self.text.len() as isize,
         };
     }
 
@@ -122,7 +117,7 @@ impl ScrolledBuf {
     pub fn swap_direction(&mut self) {
         self.dir = match self.dir {
             ScrollDirection::RightToLeft => ScrollDirection::LeftToRight,
-            ScrollDirection::LeftToRight => ScrollDirection::RightToLeft
+            ScrollDirection::LeftToRight => ScrollDirection::RightToLeft,
         };
         self.reset();
     }
@@ -133,7 +128,7 @@ impl ScrolledBuf {
     pub fn is_finished(&self) -> bool {
         match self.dir {
             ScrollDirection::RightToLeft => self.step == self.text.len() as isize + 1,
-            ScrollDirection::LeftToRight => self.step == -self.visible_len - 1
+            ScrollDirection::LeftToRight => self.step == -self.visible_len - 1,
         }
     }
 }

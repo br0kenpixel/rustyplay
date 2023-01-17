@@ -6,7 +6,7 @@ pub struct Timer {
     /// Time at which the timer was started/created.
     start: Instant,
     /// Duration of the timer.
-    len: Duration
+    len: Duration,
 }
 
 /// Methods for [`Timer`](Timer).
@@ -15,7 +15,7 @@ impl Timer {
     pub fn new(len: Duration) -> Self {
         Timer {
             start: Instant::now(),
-            len
+            len,
         }
     }
 
@@ -34,6 +34,6 @@ impl Timer {
 
     /// Returns whether the timer has expired.
     pub fn expired(&self) -> bool {
-        Instant::now() - self.start >= self.len
+        self.start.elapsed() >= self.len
     }
 }

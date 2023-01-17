@@ -5,8 +5,8 @@ use std::time::Duration;
 
 mod audioinfo;
 use crate::audioinfo::*;
-mod scrolledbuf;
 mod display;
+mod scrolledbuf;
 mod timer;
 use crate::display::*;
 mod player;
@@ -23,7 +23,7 @@ fn main() {
     if args.len() != 2 {
         eprintln!("Invalid arguments:");
         eprintln!("Usage:\n {} [FILE]", args[0]);
-        eprintln!("Supported formats: {:?}", SUPPORTED_FORMATS);
+        eprintln!("Supported formats: {SUPPORTED_FORMATS:?}");
         exit(1);
     }
 
@@ -37,11 +37,12 @@ fn run(file: String) {
     let afile: AudioFile = get_audio_info(&file);
     let player: Player = Player::new(&file);
     let lyrics = LyricsProcessor::load_file(generate_lyrics_file_name(&file));
+    let mut lyrics_bank: Option<LyricsBank> = None;
 
     /* Start UI */
     let mut display: Display = Display::new(&file);
     let mut display_event: DisplayEvent;
-    
+
     display.init();
 
     if !display.sizecheck() {
@@ -68,33 +69,38 @@ fn run(file: String) {
             display.update_progress(player.playtime(), afile.length);
             display.handle_scroll();
 
-            if !lyrics.is_err() {
-                let line = lyrics.as_ref().unwrap().get_line(player.playtime());
-                if let Some(text) = line {
-                    display.set_text(text);
-                } else {
-                    display.clear_infoview();
+            if lyrics.is_ok() {
+                let lp = lyrics.as_ref().unwrap();
+                let playtime = player.playtime();
+                let mut bank: LyricsBank = lyrics_bank.unwrap_or(lp.get_bank(None));
+
+                if bank.is_expired(playtime) && bank.next_available() {
+                    bank = lp.get_bank(Some(bank));
                 }
+
+                let active = bank.get_active(playtime);
+                display.set_lyrics_bank(&bank);
+                display.set_active_lyrics_line(&active);
                 display.refresh_infoview();
+
+                lyrics_bank = Some(bank);
             }
         }
 
         display.staus_message_tick();
-        
+
         // Getch will also refresh the display
         display_event = match display.getch() {
             None => DisplayEvent::Nothing,
-            Some(key) => {
-                match char::from_u32(key as u32).unwrap() {
-                    'g' => DisplayEvent::MakePlay,
-                    'f' => DisplayEvent::JumpBack,
-                    'h' => DisplayEvent::JumpNext,
-                    'b' => DisplayEvent::MakePause,
-                    'v' => DisplayEvent::ToggleMute,
-                    'q' => DisplayEvent::Quit,
-                    _   => DisplayEvent::Invalid
-                }
-            }
+            Some(key) => match char::from_u32(key as u32).unwrap() {
+                'g' => DisplayEvent::MakePlay,
+                'f' => DisplayEvent::JumpBack,
+                'h' => DisplayEvent::JumpNext,
+                'b' => DisplayEvent::MakePause,
+                'v' => DisplayEvent::ToggleMute,
+                'q' => DisplayEvent::Quit,
+                _ => DisplayEvent::Invalid,
+            },
         };
 
         process_display_event(display_event, &player, &mut display);
@@ -114,12 +120,12 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
             player.play();
             display.set_playback_status(true);
             display.set_status_message("Resumed", None);
-        },
+        }
         MakePause => {
             player.pause();
             display.set_playback_status(false);
             display.set_status_message("Paused", None);
-        },
+        }
         ToggleMute => {
             if player.is_muted() {
                 player.unmute();
@@ -128,14 +134,14 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
                 player.mute();
                 display.set_status_message("Muted", None);
             }
-        },
+        }
         JumpNext => (), //TODO: Implement
         JumpBack => (), //TODO: Implement
         Invalid => {
             display.set_status_message("Unknown command", None);
-        },
-        Quit     => player.destroy(),
-        Nothing  => ()
+        }
+        Quit => player.destroy(),
+        Nothing => (),
     }
 }
 

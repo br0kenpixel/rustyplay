@@ -1,12 +1,11 @@
+use pausable_clock::PausableClock;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 use std::fs::File;
 use std::io::BufReader;
-use std::time::{Instant, Duration};
-use pausable_clock::*;
-use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 #[cfg(debug_assertions)]
-use rodio::{Source, source::Buffered};
+use rodio::{source::Buffered, Source};
 
 /// This structure represents an audio player.
 pub struct Player {
@@ -23,32 +22,29 @@ pub struct Player {
     /// A clock that can be paused and resumed.  
     /// *This is used to calculate the playtime*  
     /// When the audio is paused, the clock is paused too.
-    clock: Arc<PausableClock>
+    clock: PausableClock,
 }
 
 impl Player {
     /// Creates a new player from a given file.  
     /// *The playback is paused by default.*
     pub fn new(file: &String) -> Player {
-        let (_stream, _stream_handle) = OutputStream::try_default()
-            .expect("Unable to open audio device");
-        
-        let sink = Sink::try_new(&_stream_handle)
-            .expect("Unable to create Sink");
-        
-        let file = BufReader::new(File::open(&file)
-            .expect("Unable to open file"));
-        
-        let source = Decoder::new(file)
-            .expect("Unable to create decoder");
-            /* type: Decoder<BufReader<File>> */
+        let (_stream, _stream_handle) =
+            OutputStream::try_default().expect("Unable to open audio device");
+
+        let sink = Sink::try_new(&_stream_handle).expect("Unable to create Sink");
+
+        let file = BufReader::new(File::open(&file).expect("Unable to open file"));
+
+        let source = Decoder::new(file).expect("Unable to create decoder");
+        /* type: Decoder<BufReader<File>> */
 
         // Fix FLAC playback in debug builds
         #[cfg(debug_assertions)]
         let source = Self::warm_src(source);
-        
+
         let start_time = Instant::now();
-        let clock = Arc::new(PausableClock::default());
+        let clock = PausableClock::default();
 
         // Start playling
         sink.append(source);
@@ -60,23 +56,23 @@ impl Player {
             _stream_handle,
             sink,
             start_time,
-            clock
+            clock,
         }
     }
 
     /// Used to "warm up" a buffered [`Decoder`](Decoder).  
     /// This fixes playback issues with FLAC files (and maybe others)
     /// when using a debug build.
-    /// 
+    ///
     /// ### Credits
     /// [Here.](https://docs.rs/rusty_audio/1.4.0/src/rusty_audio/lib.rs.html#85)
-    /// 
+    ///
     /// ### Notes
     /// This function is excluded from the build if building in release mode.
     #[cfg(debug_assertions)]
     fn warm_src(src: Decoder<BufReader<File>>) -> Buffered<Decoder<BufReader<File>>> {
         let source_buf = src.buffered();
-        
+
         let warm = source_buf.clone();
         for i in warm {
             drop(i);
@@ -129,6 +125,6 @@ impl Player {
 
     /// Returns the current playtime.
     pub fn playtime(&self) -> Duration {
-        return Instant::from(self.clock.now()) - self.start_time;
+        Instant::from(self.clock.now()) - self.start_time
     }
 }

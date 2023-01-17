@@ -1,7 +1,8 @@
-use ncurses::*;
-use crate::audioinfo::{AudioMeta, AudioFile, AudioFormat};
+use crate::audioinfo::{AudioFile, AudioFormat, AudioMeta};
+use crate::lyrics::{LyricsBank, LYRICS_BANK_SIZE};
 use crate::scrolledbuf::*;
 use crate::timer::Timer;
+use ncurses::*;
 use std::path::Path;
 use std::time::Duration;
 
@@ -27,7 +28,7 @@ pub struct Display {
     /// Timer that handles scrolling
     scroll_timer: Timer,
     /// Timer that handles removing the status message after it's expired
-    message_timer: Option<Timer>
+    message_timer: Option<Timer>,
 }
 
 /// Represents different events that occur when
@@ -49,7 +50,7 @@ pub enum DisplayEvent {
     /// The user pressed a key which is not bound to any command.
     Invalid,
     /// The program was requested to stop playing and exit.
-    Quit
+    Quit,
 }
 
 /// This implementation contains all the functions that are used to draw the TUI.
@@ -65,8 +66,7 @@ impl Display {
         timeout(0);
         curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
 
-        let filename = 
-            Path::new(file)
+        let filename = Path::new(file)
             .file_name()
             .unwrap()
             .to_owned()
@@ -77,7 +77,7 @@ impl Display {
             infoview: newwin(6, COLS() - 8, INFOVIEW_OFFSET, 4),
             scrolledname: ScrolledBuf::new(filename, COLS() - 8, ScrollDirection::LeftToRight),
             scroll_timer: Timer::new(Duration::from_millis(SCROLL_SHORT_TIME)),
-            message_timer: None
+            message_timer: None,
         }
     }
 
@@ -85,7 +85,7 @@ impl Display {
     /// A mininum size of 100x28 is required.  
     /// Sizes >= 100x28 will work and the TUI is adjusted automatically.
     pub fn sizecheck(&self) -> bool {
-        return LINES() >= 28 && COLS() >= 100;
+        LINES() >= 28 && COLS() >= 100
     }
 
     /// Initializes the TUI.
@@ -152,7 +152,8 @@ impl Display {
         addch(ACS_LTEE());
         addch(ACS_HLINE());
         self.addstr("[|>]");
-        addch(ACS_HLINE()); addch(ACS_HLINE());
+        addch(ACS_HLINE());
+        addch(ACS_HLINE());
         self.addstr("[00:00]");
         addch(ACS_HLINE());
         self.addchar('[');
@@ -172,7 +173,7 @@ impl Display {
         //self.print_control('F', "Prev", true); // not implemented for now
         self.print_control('G', "Play", true);
         //self.print_control('H', "Next", false); // not implemented for now
-        
+
         //self.moveto(LINES() - 2, 2);
         self.print_control('B', "Pause", true);
         self.print_control('V', "Mute", false);
@@ -212,7 +213,7 @@ impl Display {
     pub fn getch(&self) -> Option<i32> {
         match getch() {
             ERR => None,
-            c => Some(c)
+            c => Some(c),
         }
     }
 
@@ -223,7 +224,7 @@ impl Display {
     #[allow(dead_code)]
     pub fn blocking_getch(&self) -> i32 {
         let mut res = self.getch();
-        while res == None {
+        while res.is_none() {
             res = self.getch();
         }
         res.unwrap()
@@ -273,14 +274,16 @@ impl Display {
     }
 
     /// Alias for [`ncurses::wmove()`](ncurses::wmove()) with a check to prevent the cursor from moving outside the screen.
-    /// 
+    ///
     /// ## Panics
     /// Panics if `ypos` or `xpos` is greater than the screen size.
     fn wmoveto(&self, ypos: i32, xpos: i32, win: WINDOW) {
-        if ypos >= LINES() || xpos >= COLS() {
-            panic!("moveto(ypos={ypos}, xpos={xpos}) exceeds screen size {}Lx{}C",
-                LINES(), COLS());
-        }
+        assert!(
+            !(ypos >= LINES() || xpos >= COLS()),
+            "moveto(ypos={ypos}, xpos={xpos}) exceeds screen size {}Lx{}C",
+            LINES(),
+            COLS()
+        );
         wmove(win, ypos, xpos);
     }
 
@@ -314,7 +317,7 @@ impl Display {
         self.moveto(4, 15);
         self.addstring(&metadata.artist);
     }
-    
+
     /// Set the track length display in the TUI.
     pub fn set_track_length(&self, time: f64) {
         self.print_pretty_time(LINES() - 5, COLS() - 8, time);
@@ -335,20 +338,11 @@ impl Display {
     /// Calculate the progress bar blocks and print them to the TUI.
     pub fn set_progress(&self, played: f64, total_len: f64) {
         let max_block_count = ((COLS() - 12) - 15) - 1;
-        let mut use_blocks = Display::map(
-            played,
-            0.0,
-            total_len,
-            0.0,
-            max_block_count as f64
-        ) as i32;
+        let mut use_blocks =
+            Display::map(played, 0.0, total_len, 0.0, max_block_count as f64) as i32;
 
         // Constrain
-        if use_blocks < 0 {
-            use_blocks = 0;
-        } else if use_blocks > max_block_count {
-            use_blocks = max_block_count;
-        }
+        use_blocks = use_blocks.clamp(0, max_block_count);
 
         self.print_progress_blocks(use_blocks as i32, max_block_count);
     }
@@ -356,20 +350,21 @@ impl Display {
     /// Update the file quality display in the TUI.
     pub fn set_file_quality(&self, fileinfo: &AudioFile) {
         self.moveto(6, 4);
-        self.addstring(&format!("{} Hz, {}, {} {}",
+        self.addstring(&format!(
+            "{} Hz, {}, {} {}",
             fileinfo.sample_rate,
             match fileinfo.stereo {
                 true => "Stereo",
-                false => "Mono"
+                false => "Mono",
             },
             match fileinfo.lossless {
                 true => "Lossless",
-                false => "Lossy"
+                false => "Lossy",
             },
             match fileinfo.format {
                 AudioFormat::FLAC => "FLAC",
-                AudioFormat::WAV  => "WAV",
-                AudioFormat::OGG  => "OGG"
+                AudioFormat::WAV => "WAV",
+                AudioFormat::OGG => "OGG",
             }
         ));
     }
@@ -410,15 +405,17 @@ impl Display {
         let message = format!("[ {message} ]");
         let xpos = (COLS() / 2) - (message.len() as i32 / 2);
 
-        if !self.message_timer.is_none() {
+        if self.message_timer.is_some() {
             self.clear_status_message();
         }
-        
+
         self.moveto(LINES() - STATUSMSG_OFFSET, xpos);
         attr_on(A_STANDOUT());
         self.addstring(&message);
         attr_off(A_STANDOUT());
-        self.message_timer = Some(Timer::new(time.unwrap_or(Duration::from_secs(STATUSMSG_DEFTIME))));
+        self.message_timer = Some(Timer::new(
+            time.unwrap_or(Duration::from_secs(STATUSMSG_DEFTIME)),
+        ));
     }
 
     /// Clears the currently displayed status message.
@@ -437,7 +434,7 @@ impl Display {
 
     /// Checks if the currently displayed status message
     /// expired. If yes, it will be cleared, otherwise nothing will be done.
-    /// 
+    ///
     /// ## Note #1
     /// Can be safely called even if there is no status message being
     /// displayed, as in such cases the function will not do anything.
@@ -455,14 +452,18 @@ impl Display {
     /// This function should be called as often as possible
     /// for accurately timed scrolling.
     pub fn handle_scroll(&mut self) {
-        if !self.scroll_timer.expired() { return; }
+        if !self.scroll_timer.expired() {
+            return;
+        }
         self.moveto(INFOVIEW_OFFSET + 7, 4);
         self.addstr(&self.scrolledname.current_frame());
         if self.scrolledname.is_finished() {
             self.scrolledname.swap_direction();
-            self.scroll_timer.rebuild(Duration::from_millis(SCROLL_PAUSE_TIME));
+            self.scroll_timer
+                .rebuild(Duration::from_millis(SCROLL_PAUSE_TIME));
         } else {
-            self.scroll_timer.rebuild(Duration::from_millis(SCROLL_SHORT_TIME));
+            self.scroll_timer
+                .rebuild(Duration::from_millis(SCROLL_SHORT_TIME));
         }
         self.scrolledname.next_frame();
     }
@@ -470,29 +471,17 @@ impl Display {
 
 /// This implementation adds functions to use the `Lyrics` subwindow.
 impl Display {
-    /// Set the text in the `Lyrics` subwindow.
-    /// > **Note:** This still needs work - like a proper line wrapping algorithm.
-    pub fn set_text(&self, line: String) {
-        assert!((line.len() as i32) < COLS() - 12 /* some random bound */);
-        self.clear_infoview();
-        if line.is_empty() { return; }
-        self.wmoveto(1, 2, self.infoview);
-        wattron(self.infoview, A_BOLD());
-        self.waddstr("-> ", self.infoview);
-        self.waddstring(&line, self.infoview);
-        wattroff(self.infoview, A_BOLD());
-    }
-
     /// Clear all text inside the `Lyrics` subwindow.
     pub fn clear_infoview(&self) {
-        for ypos in 1..3 {
-            for xpos in 2..COLS() - 10 {
+        for ypos in 1..5 {
+            for xpos in 2..COLS() - 9 {
                 self.wmoveto(ypos, xpos, self.infoview);
                 self.waddchar(' ', self.infoview);
             }
         }
     }
 
+    /// Refresh the Lyrics subwindow.
     pub fn refresh_infoview(&self) {
         wrefresh(self.infoview);
     }
@@ -504,5 +493,39 @@ impl Display {
         wattron(self.infoview, A_ITALIC());
         self.waddstr("Unavailable", self.infoview);
         wattroff(self.infoview, A_ITALIC());
+    }
+
+    /// Display a [`LyricsBank`](LyricsBank).
+    pub fn set_lyrics_bank(&self, bank: &LyricsBank) {
+        self.clear_infoview();
+        let mut ypos = 1;
+
+        for line in bank.lines.iter().take(LYRICS_BANK_SIZE) {
+            self.wmoveto(ypos, 2, self.infoview);
+            self.waddstr("   ", self.infoview);
+            self.waddstring(&line.text, self.infoview);
+            ypos += 1;
+        }
+    }
+
+    /// Highlight a line of lyrics.
+    /// If `active` is `None`, none of the lines will be highlighted.
+    pub fn set_active_lyrics_line(&self, active: &Option<usize>) {
+        for ypos in 1..5 {
+            self.wmoveto(ypos, 2, self.infoview);
+            self.waddstr("   ", self.infoview);
+            wchgat(self.infoview, COLS() - 9 - 5, 0, COLOR_WHITE);
+        }
+
+        if active.is_none() {
+            return;
+        }
+        let active = active.unwrap();
+
+        self.wmoveto(1 + active as i32, 2, self.infoview);
+        wattron(self.infoview, A_BOLD());
+        self.waddstr("-> ", self.infoview);
+        wchgat(self.infoview, COLS() - 9 - 5, A_BOLD(), COLOR_WHITE);
+        wattroff(self.infoview, A_BOLD());
     }
 }

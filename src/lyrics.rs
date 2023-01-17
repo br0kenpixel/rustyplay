@@ -1,26 +1,42 @@
-use std::fs;
-use std::str;
-use std::path::Path;
-use std::time::{Duration};
 use json::{parse, JsonValue};
-use itertools::Itertools;
+use std::fs;
+use std::path::Path;
+use std::str;
+use std::time::Duration;
+
+/// Defines the amount of lines that can be displayed by the TUI.
+///
+/// ## Note
+/// The actual amount of [`LyricsLine`](LyricsLine)s stored in
+/// [`LyricsBank`](LyricsBank) is [`LYRICS_BANK_SIZE`](LYRICS_BANK_SIZE) + 1.
+/// The extra one is used to prevent the TUI from switching to another bank
+/// too early.
+pub const LYRICS_BANK_SIZE: usize = 4;
+
+/// Represents a small set of lines from the lyrics.  
+#[derive(Debug, Clone)]
+pub struct LyricsBank {
+    /// Internal stack  
+    /// The length of this vector should be no more than [`LYRICS_BANK_SIZE`](LYRICS_BANK_SIZE) + 1
+    pub lines: Vec<LyricsLine>,
+}
 
 /// Represents a line of lyrics.
 #[derive(Debug, Clone)]
-struct LyricsLine {
+pub struct LyricsLine {
     /// Time at which the line should be displayed.
     time: Duration,
     /// Time at which the line should be hidden.
     end_time: Option<Duration>,
     /// Text of the line.
-    text: String
+    pub text: String,
 }
 
 /// This structure represents a lyrics file.
 #[derive(Debug)]
 pub struct LyricsProcessor {
     /// Lines of lyrics.
-    lines: Vec<LyricsLine>
+    lines: Vec<LyricsLine>,
 }
 
 impl LyricsProcessor {
@@ -37,32 +53,67 @@ impl LyricsProcessor {
 
         let json_content = match parse(content) {
             Ok(json) => json,
-            Err(e) => return Err(format!("JSON parse error: {e}"))
+            Err(e) => return Err(format!("JSON parse error: {e}")),
         };
 
-        assert!(json_content["error"] == false);
+        if json_content["error"] == true {
+            return Err("error in JSON".to_owned());
+        }
         let json_content = json_content["lines"].clone();
 
         Ok(LyricsProcessor {
-            lines: LyricsProcessor::parse_lines(json_content)
+            lines: LyricsProcessor::parse_lines(json_content),
         })
     }
 
-    /// Gets the line of lyrics that should be displayed at the given time.
-    pub fn get_line(&self, time: Duration) -> Option<String> {
-        for (first, second) in self.lines.iter().tuple_windows() {
-            if time >= first.time && time <= second.time {
-                if !first.end_time.is_none() && time >= first.end_time.unwrap() {
-                    return None;
-                }
-                return Some(first.text.clone());
+    /// Gets the (next) [`LyricsBank`](LyricsBank).
+    /// If `prev_bank` is `None`, the returned [`LyricsBank`](LyricsBank)
+    /// will contain the first [`LYRICS_BANK_SIZE`](LYRICS_BANK_SIZE) + 1 lines
+    /// from the lyrics.
+    ///
+    /// ## Panics
+    /// This function may panic if `prev_bank` is a malformed [`LyricsBank`](LyricsBank).
+    pub fn get_bank(&self, prev_bank: Option<LyricsBank>) -> LyricsBank {
+        if prev_bank.is_none() {
+            return LyricsBank {
+                lines: self
+                    .lines
+                    .iter()
+                    .take(LYRICS_BANK_SIZE + 1)
+                    .cloned()
+                    .collect(),
+            };
+        }
+
+        let prev_bank = prev_bank.unwrap();
+        let end = self
+            .lines
+            .iter()
+            .position(|entry| prev_bank.lines.last().unwrap().time == entry.time)
+            .unwrap();
+
+        let mut result = Vec::new();
+        for i in end..=(end + LYRICS_BANK_SIZE) {
+            match self.lines.get(i) {
+                None => break,
+                Some(val) => result.push(val.clone()),
             }
         }
 
-        None
+        LyricsBank { lines: result }
     }
 
     /// Parses the lines of lyrics from a JSON object.
+    ///
+    /// ## Notes
+    /// Upon reaching a line which contains a single `♪` (note) character or
+    /// is empty, the [`end_time`](LyricsLine::end_time) attribute is set
+    /// to this line's [`time`](LyricsLine::time). This allows better visualization
+    /// of the lyrics.
+    ///
+    /// ## Panics
+    /// This function panics if the JSON file being parsed contains incorrectly
+    /// formatted data.
     fn parse_lines(raw_lines: JsonValue) -> Vec<LyricsLine> {
         let mut result: Vec<LyricsLine> = Vec::new();
 
@@ -74,12 +125,9 @@ impl LyricsProcessor {
 
             let words: String = item["words"].as_str().unwrap().to_owned();
 
-            if words == "♪" {
-                match result.get_mut(index - 1) {
-                    Some(line) => {
-                        line.end_time = Some(Duration::from_millis(start_ms));
-                    },
-                    None => ()
+            if words == "♪" || words.is_empty() {
+                if let Some(line) = result.last_mut() {
+                    line.end_time = Some(Duration::from_millis(start_ms));
                 }
                 continue;
             }
@@ -87,10 +135,62 @@ impl LyricsProcessor {
             result.push(LyricsLine {
                 time: Duration::from_millis(start_ms),
                 text: words,
-                end_time: None
+                end_time: None,
             });
         }
-
         result
+    }
+}
+
+impl LyricsBank {
+    /// Alias to the [`lines`](LyricsBank::lines) attribute's [`last()`](Iterator::last).
+    ///
+    /// ## Panics
+    /// This function will panic if the aliased function returns `None`.
+    pub fn last(&self) -> &LyricsLine {
+        self.lines.last().unwrap()
+    }
+
+    /// Alias to the [`lines`](LyricsBank::lines) attribute's [`len()`](Vec::len).
+    pub fn len(&self) -> usize {
+        self.lines.len()
+    }
+
+    /// Get the index of a line in [`LyricsBank`](LyricsBank) which
+    /// should be highlighed according to the given playtime.
+    ///
+    /// ## Notes
+    /// Returns `None` if no line should be highlighted at the given playtime.
+    pub fn get_active(&self, time: Duration) -> Option<usize> {
+        let potential = self
+            .lines
+            .iter()
+            .take(LYRICS_BANK_SIZE)
+            .rposition(|entry| time >= entry.time);
+        if let Some(index) = potential {
+            let entry = &self.lines[index];
+
+            if entry.end_time.is_some() && time >= entry.end_time.unwrap() {
+                return None;
+            }
+            return Some(index);
+        }
+        None
+    }
+
+    /// Returns whether the bank should no longer be used and the
+    /// next one should be requested using [`get_bank()`](LyricsProcessor::get_bank).
+    pub fn is_expired(&self, playtime: Duration) -> bool {
+        playtime >= self.last().time
+    }
+
+    /// Returns whether this bank is the last or the next one can be requested
+    /// using [`get_bank()`](LyricsProcessor::get_bank).
+    ///
+    /// ## Notes
+    /// [`get_bank()`](LyricsProcessor::get_bank) should not be called if
+    /// this function returns `false`.
+    pub fn next_available(&self) -> bool {
+        self.len() > LYRICS_BANK_SIZE
     }
 }
