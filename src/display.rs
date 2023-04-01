@@ -82,7 +82,7 @@ impl Display {
     }
 
     /// Checks if the terminal is big enough to display the TUI.
-    /// A mininum size of 100x28 is required.  
+    /// A minimum size of 100x28 is required.  
     /// Sizes >= 100x28 will work and the TUI is adjusted automatically.
     pub fn sizecheck(&self) -> bool {
         LINES() >= 28 && COLS() >= 100
@@ -240,7 +240,7 @@ impl Display {
         waddch(win, c as u32);
     }
 
-    /// Alias for printring a character multiple times with [`ncurses::addch()`](ncurses::addch()).
+    /// Alias for printing a character multiple times with [`ncurses::addch()`](ncurses::addch()).
     fn addnch(&self, c: chtype, n: i32) {
         for _ in 0..n {
             addch(c);
@@ -459,11 +459,9 @@ impl Display {
         self.addstr(&self.scrolledname.current_frame());
         if self.scrolledname.is_finished() {
             self.scrolledname.swap_direction();
-            self.scroll_timer
-                .rebuild(Duration::from_millis(SCROLL_PAUSE_TIME));
+            self.scroll_timer = Timer::new(Duration::from_millis(SCROLL_PAUSE_TIME));
         } else {
-            self.scroll_timer
-                .rebuild(Duration::from_millis(SCROLL_SHORT_TIME));
+            self.scroll_timer = Timer::new(Duration::from_millis(SCROLL_SHORT_TIME));
         }
         self.scrolledname.next_frame();
     }

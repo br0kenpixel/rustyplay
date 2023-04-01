@@ -36,7 +36,7 @@ impl ScrolledBuf {
     ///
     /// # Arguments
     /// * `text` - Any object that can be converted to a [`String`](String) using `into()`
-    /// * `visible` - Amount of visible charcters
+    /// * `visible` - Amount of visible characters
     /// * `dir` - Scroll direction
     ///
     /// ### Notes
