@@ -4,9 +4,6 @@ use std::fs::File;
 use std::io::BufReader;
 use std::time::{Duration, Instant};
 
-#[cfg(debug_assertions)]
-use rodio::{source::Buffered, Source};
-
 /// This structure represents an audio player.
 pub struct Player {
     /// *Unused but needs to be kept in memory.*
@@ -39,10 +36,6 @@ impl Player {
         let source = Decoder::new(file).expect("Unable to create decoder");
         /* type: Decoder<BufReader<File>> */
 
-        // Fix FLAC playback in debug builds
-        #[cfg(debug_assertions)]
-        let source = Self::warm_src(source);
-
         let start_time = Instant::now();
         let clock = PausableClock::default();
 
@@ -58,27 +51,6 @@ impl Player {
             start_time,
             clock,
         }
-    }
-
-    /// Used to "warm up" a buffered [`Decoder`](Decoder).  
-    /// This fixes playback issues with FLAC files (and maybe others)
-    /// when using a debug build.
-    ///
-    /// ### Credits
-    /// [Here.](https://docs.rs/rusty_audio/1.4.0/src/rusty_audio/lib.rs.html#85)
-    ///
-    /// ### Notes
-    /// This function is excluded from the build if building in release mode.
-    #[cfg(debug_assertions)]
-    fn warm_src(src: Decoder<BufReader<File>>) -> Buffered<Decoder<BufReader<File>>> {
-        let source_buf = src.buffered();
-
-        let warm = source_buf.clone();
-        for i in warm {
-            drop(i);
-        }
-
-        source_buf
     }
 
     /// Pauses the audio playback.
