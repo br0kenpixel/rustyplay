@@ -459,11 +459,9 @@ impl Display {
         self.addstr(&self.scrolledname.current_frame());
         if self.scrolledname.is_finished() {
             self.scrolledname.swap_direction();
-            self.scroll_timer
-                .rebuild(Duration::from_millis(SCROLL_PAUSE_TIME));
+            self.scroll_timer = Timer::new(Duration::from_millis(SCROLL_PAUSE_TIME));
         } else {
-            self.scroll_timer
-                .rebuild(Duration::from_millis(SCROLL_SHORT_TIME));
+            self.scroll_timer = Timer::new(Duration::from_millis(SCROLL_SHORT_TIME));
         }
         self.scrolledname.next_frame();
     }
