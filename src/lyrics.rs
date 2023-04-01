@@ -157,7 +157,7 @@ impl LyricsBank {
     }
 
     /// Get the index of a line in [`LyricsBank`](LyricsBank) which
-    /// should be highlighed according to the given playtime.
+    /// should be highlighted according to the given playtime.
     ///
     /// ## Notes
     /// Returns `None` if no line should be highlighted at the given playtime.

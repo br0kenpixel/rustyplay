@@ -39,7 +39,7 @@ impl Player {
         let start_time = Instant::now();
         let clock = PausableClock::default();
 
-        // Start playling
+        // Start playing
         sink.append(source);
         sink.pause();
         clock.pause();
@@ -70,7 +70,7 @@ impl Player {
         self.sink.set_volume(0.0);
     }
 
-    /// Unmutes the audio playback.
+    /// Unmute the audio playback.
     pub fn unmute(&self) {
         self.sink.set_volume(1.0);
     }
