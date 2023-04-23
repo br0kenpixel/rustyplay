@@ -16,6 +16,7 @@ This is a remade version of the original, which was written in C.
 - [`src/main.rs`](src/main.rs) - Contains the main entry point. You should start exploring from here.
 - [`src/audioinfo.rs`](src/audioinfo.rs) - Provides implementations for reading metadata from audio files.
 - [`src/lyrics.rs`](src/lyrics.rs) - The lyrics "engine."
+- [`src/lyrics_parse.rs`](src/lyrics_parse.rs) - The lyrics parser.
 - [`src/player.rs`](src/player.rs) - Provides implementations for controlling the audio player.
 - [`src/display.rs`](src/display.rs) - Provides a high-level abstraction layer for creating and managing the UI.
 - [`src/timer.rs`](src/timer.rs) - Provides a simple timer/countdown object.
@@ -62,8 +63,10 @@ As of now, it was only tested on macOS Monterey 12.6.1 (Intel). But theoreticall
   - A popular terminal UI library
 - [`pausable_clock`](https://crates.io/crates/pausable_clock)
   - Provides a pausable/resumable clock type
-- [`json`](https://crates.io/crates/json)
-  - Used to read lyrics files
+- [`serde`](https://crates.io/crates/serde)
+  - A data serialization/deserialization framework
+- [`serde_json`](https://crates.io/crates/serde_json)
+  - Allows serialization/deserialization to/from JSON using `serde`.
 
 # Lyrics
 The time-synced lyrics are provided by Spotify/Musixmatch. In order to be able to use this feature, you must obtain a JSON file containing the time-synced lyrics data. Such data can be obtained by using either [`akashrchandran/spotify-lyrics-api`](https://github.com/akashrchandran/spotify-lyrics-api) or [`br0kenpixel/spotify-lyrics-api-rust`](https://github.com/br0kenpixel/spotify-lyrics-api-rust).
@@ -75,26 +78,6 @@ For example, if you run `musicplayer Documents/Music/hello.wav` then `Documents/
 
 ## "End time" support
 So far I haven't noticed any lyrics data with `endTimeMs` set, however if the lyrics contain a line with a singe `♪` character (or is empty), the lyrics parser will automatically "adjust" the lyrics data. This line will be ignored and it's `startTimeMs` is changed to the previous line's `endTimeMs`.
-For a quick overview, here's the snippet of the function that handles this "adjustment"/"cleanup":  
-> ⚠️ This part of the code has been refactored, but the same algorithm applies. You can check the new implementation [here](https://github.com/br0kenpixel/rustyplay/blob/main/src/lyrics.rs#L117). If you want to check the old implementation, click [here](https://github.com/br0kenpixel/rustyplay/blob/2a923488ea6d2ca04e2118d81ef2030e4e6ef3b7/src/lyrics.rs#L92).
-```rust
-let mut result: Vec<LyricsLine> = Vec::new();
-
-/* Parsing JSON... */
-
-let mut index = 0;
-while index < result.len() {
-    let current = result[index].clone();
-    if current.text == "♪" {
-        let mut previous = result.get_mut(index - 1).unwrap();
-        previous.end_time = Some(current.time);
-        result.remove(index);
-    } else {
-        index += 1;
-    }
-}
-```
-If such a line is not found, this adjustment will not happen.
 
 # Documentation
 You can use `cargo doc` to generate the documentation.  

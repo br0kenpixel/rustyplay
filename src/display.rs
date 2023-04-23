@@ -501,7 +501,7 @@ impl Display {
         for line in bank.lines.iter().take(LYRICS_BANK_SIZE) {
             self.wmoveto(ypos, 2, self.infoview);
             self.waddstr("   ", self.infoview);
-            self.waddstring(&line.text, self.infoview);
+            self.waddstring(&line.words, self.infoview);
             ypos += 1;
         }
     }

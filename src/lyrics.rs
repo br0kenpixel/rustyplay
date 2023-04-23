@@ -1,7 +1,5 @@
-use json::{parse, JsonValue};
-use std::fs;
-use std::path::Path;
-use std::str;
+use crate::lyrics_parse::{Lyrics, LyricsEntry};
+use std::path::PathBuf;
 use std::time::Duration;
 
 /// Defines the amount of lines that can be displayed by the TUI.
@@ -18,25 +16,14 @@ pub const LYRICS_BANK_SIZE: usize = 4;
 pub struct LyricsBank {
     /// Internal stack  
     /// The length of this vector should be no more than [`LYRICS_BANK_SIZE`](LYRICS_BANK_SIZE) + 1
-    pub lines: Vec<LyricsLine>,
-}
-
-/// Represents a line of lyrics.
-#[derive(Debug, Clone)]
-pub struct LyricsLine {
-    /// Time at which the line should be displayed.
-    time: Duration,
-    /// Time at which the line should be hidden.
-    end_time: Option<Duration>,
-    /// Text of the line.
-    pub text: String,
+    pub lines: Vec<LyricsEntry>,
 }
 
 /// This structure represents a lyrics file.
 #[derive(Debug)]
 pub struct LyricsProcessor {
     /// Lines of lyrics.
-    lines: Vec<LyricsLine>,
+    lines: Vec<LyricsEntry>,
 }
 
 impl LyricsProcessor {
@@ -46,23 +33,12 @@ impl LyricsProcessor {
     /// - [`br0kenpixel/spotify-lyrics-api-rust`](https://github.com/br0kenpixel/spotify-lyrics-api-rust)  
     /// `LRC`'s are not supported and likely never will be.
     pub fn load_file(file: String) -> Result<LyricsProcessor, String> {
-        let Ok(content) = fs::read(Path::new(&file)) else {
-            return Err("Can't find lyrics file".to_owned());
-        };
-        let content = str::from_utf8(&content).unwrap();
-
-        let json_content = match parse(content) {
-            Ok(json) => json,
-            Err(e) => return Err(format!("JSON parse error: {e}")),
-        };
-
-        if json_content["error"] == true {
-            return Err("error in JSON".to_owned());
-        }
-        let json_content = json_content["lines"].clone();
+        let mut lyrics = Lyrics::parse_file(&PathBuf::from(file))
+            .map_err(|e| format!("File parse error: {e}"))?;
+        lyrics.fix_end_times();
 
         Ok(LyricsProcessor {
-            lines: LyricsProcessor::parse_lines(json_content),
+            lines: lyrics.lines,
         })
     }
 
@@ -89,7 +65,7 @@ impl LyricsProcessor {
         let end = self
             .lines
             .iter()
-            .position(|entry| prev_bank.lines.last().unwrap().time == entry.time)
+            .position(|entry| prev_bank.lines.last().unwrap().startTimeMs == entry.startTimeMs)
             .unwrap();
 
         let mut result = Vec::new();
@@ -102,44 +78,6 @@ impl LyricsProcessor {
 
         LyricsBank { lines: result }
     }
-
-    /// Parses the lines of lyrics from a JSON object.
-    ///
-    /// ## Notes
-    /// Upon reaching a line which contains a single `♪` (note) character or
-    /// is empty, the [`end_time`](LyricsLine::end_time) attribute is set
-    /// to this line's [`time`](LyricsLine::time). This allows better visualization
-    /// of the lyrics.
-    ///
-    /// ## Panics
-    /// This function panics if the JSON file being parsed contains incorrectly
-    /// formatted data.
-    fn parse_lines(raw_lines: JsonValue) -> Vec<LyricsLine> {
-        let mut result: Vec<LyricsLine> = Vec::new();
-
-        for index in 0..raw_lines.len() {
-            let item = &raw_lines[index];
-
-            let start_ms = &item["startTimeMs"].as_str().unwrap();
-            let start_ms = start_ms.parse::<u64>().unwrap();
-
-            let words: String = item["words"].as_str().unwrap().to_owned();
-
-            if words == "♪" || words.is_empty() {
-                if let Some(line) = result.last_mut() {
-                    line.end_time = Some(Duration::from_millis(start_ms));
-                }
-                continue;
-            }
-
-            result.push(LyricsLine {
-                time: Duration::from_millis(start_ms),
-                text: words,
-                end_time: None,
-            });
-        }
-        result
-    }
 }
 
 impl LyricsBank {
@@ -147,7 +85,7 @@ impl LyricsBank {
     ///
     /// ## Panics
     /// This function will panic if the aliased function returns `None`.
-    pub fn last(&self) -> &LyricsLine {
+    pub fn last(&self) -> &LyricsEntry {
         self.lines.last().unwrap()
     }
 
@@ -166,11 +104,11 @@ impl LyricsBank {
             .lines
             .iter()
             .take(LYRICS_BANK_SIZE)
-            .rposition(|entry| time >= entry.time);
+            .rposition(|entry| time >= *entry.startTimeMs.get());
         if let Some(index) = potential {
             let entry = &self.lines[index];
 
-            if entry.end_time.is_some() && time >= entry.end_time.unwrap() {
+            if entry.endTimeMs.get().is_valid() && time >= *entry.endTimeMs.get() {
                 return None;
             }
             return Some(index);
@@ -181,7 +119,7 @@ impl LyricsBank {
     /// Returns whether the bank should no longer be used and the
     /// next one should be requested using [`get_bank()`](LyricsProcessor::get_bank).
     pub fn is_expired(&self, playtime: Duration) -> bool {
-        playtime >= self.last().time
+        playtime >= *self.last().startTimeMs.get()
     }
 
     /// Returns whether this bank is the last or the next one can be requested

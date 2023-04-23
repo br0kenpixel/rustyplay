@@ -12,6 +12,7 @@ use crate::display::*;
 mod player;
 use crate::player::*;
 mod lyrics;
+mod lyrics_parse;
 use crate::lyrics::*;
 
 /// A list of supported audio formats.
