@@ -35,8 +35,6 @@ pub struct Display {
 /// using the keyboard controls.
 #[derive(PartialEq, Clone, Copy)]
 pub enum DisplayEvent {
-    /// Nothing to do (no key was pressed)
-    Nothing,
     /// The program was requested to resume playback.
     MakePlay,
     /// The program was requested to pause playback.

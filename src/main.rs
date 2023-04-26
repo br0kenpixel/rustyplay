@@ -131,7 +131,6 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
             display.set_status_message("Unknown command", None);
         }
         Quit => player.destroy(),
-        Nothing => (),
     }
 }
 
