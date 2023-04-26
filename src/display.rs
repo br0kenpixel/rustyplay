@@ -205,29 +205,16 @@ impl Display {
         endwin();
     }
 
-    /// A customized version of [`ncurses::getch()`](ncurses::getch()).  
-    /// Returns an `Option<i32>` instead of returning an `i32` directly.  
-    ///   
+    /// Tries to capture a keypress, converting it to a [`DisplayEvent`](DisplayEvent)
+    /// if successfull.
+    ///
     /// If [`ncurses::getch()`](ncurses::getch()) returns [`ERR`(ERR)],
-    /// `None` is returned instead.
-    pub fn getch(&self) -> Option<i32> {
+    /// [`DisplayEvent::Invalid`](DisplayEvent::Invalid) is returned.
+    pub fn capture_event(&self) -> DisplayEvent {
         match getch() {
-            ERR => None,
-            c => Some(c),
+            ERR => DisplayEvent::Invalid,
+            key => char::from_u32(key as u32).unwrap().into(),
         }
-    }
-
-    /// __This is for debugging purposes only.__  
-    /// A blocking version of [`getch()`](Self::getch()).  
-    /// This may be useful since [`Display::new()`](Self::new()) enables non-blocking mode
-    /// to prevent the player from freezing when checking for input.
-    #[allow(dead_code)]
-    pub fn blocking_getch(&self) -> i32 {
-        let mut res = self.getch();
-        while res.is_none() {
-            res = self.getch();
-        }
-        res.unwrap()
     }
 
     /// Alias for [`Display::waddchar()`](Self::waddchar()) with [`stdscr()`](ncurses::stdscr()) as the `win` argument.
@@ -525,5 +512,19 @@ impl Display {
         self.waddstr("-> ", self.infoview);
         wchgat(self.infoview, COLS() - 9 - 5, A_BOLD(), COLOR_WHITE);
         wattroff(self.infoview, A_BOLD());
+    }
+}
+
+impl Into<DisplayEvent> for char {
+    fn into(self) -> DisplayEvent {
+        match self {
+            'g' => DisplayEvent::MakePlay,
+            'f' => DisplayEvent::JumpBack,
+            'h' => DisplayEvent::JumpNext,
+            'b' => DisplayEvent::MakePause,
+            'v' => DisplayEvent::ToggleMute,
+            'q' => DisplayEvent::Quit,
+            _ => DisplayEvent::Invalid,
+        }
     }
 }

@@ -91,18 +91,7 @@ fn run(file: String) {
         display.staus_message_tick();
 
         // Getch will also refresh the display
-        display_event = match display.getch() {
-            None => DisplayEvent::Nothing,
-            Some(key) => match char::from_u32(key as u32).unwrap() {
-                'g' => DisplayEvent::MakePlay,
-                'f' => DisplayEvent::JumpBack,
-                'h' => DisplayEvent::JumpNext,
-                'b' => DisplayEvent::MakePause,
-                'v' => DisplayEvent::ToggleMute,
-                'q' => DisplayEvent::Quit,
-                _ => DisplayEvent::Invalid,
-            },
-        };
+        display_event = display.capture_event();
 
         process_display_event(display_event, &player, &mut display);
         sleep(Duration::from_millis(10));
