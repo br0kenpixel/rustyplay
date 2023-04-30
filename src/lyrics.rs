@@ -104,11 +104,11 @@ impl LyricsBank {
             .lines
             .iter()
             .take(LYRICS_BANK_SIZE)
-            .rposition(|entry| time >= *entry.startTimeMs.get());
+            .rposition(|entry| time >= entry.startTimeMs.get());
         if let Some(index) = potential {
             let entry = &self.lines[index];
 
-            if entry.endTimeMs.get().is_valid() && time >= *entry.endTimeMs.get() {
+            if entry.is_endtime_valid() && time >= entry.endTimeMs.get() {
                 return None;
             }
             return Some(index);
@@ -119,7 +119,7 @@ impl LyricsBank {
     /// Returns whether the bank should no longer be used and the
     /// next one should be requested using [`get_bank()`](LyricsProcessor::get_bank).
     pub fn is_expired(&self, playtime: Duration) -> bool {
-        playtime >= *self.last().startTimeMs.get()
+        playtime >= self.last().startTimeMs.get()
     }
 
     /// Returns whether this bank is the last or the next one can be requested
