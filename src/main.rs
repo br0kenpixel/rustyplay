@@ -35,8 +35,8 @@ fn main() {
 /// Runs the program.
 fn run(file: String) {
     /* Initialize everything first, so the UI doesn't appear laggy/frozen for too long */
-    let afile: AudioFile = get_audio_info(&file);
-    let player: Player = Player::new(&file);
+    let afile = get_audio_info(&file);
+    let player = Player::new(&file);
     let lyrics = LyricsProcessor::load_file(generate_lyrics_file_name(&file));
     let mut lyrics_bank: Option<LyricsBank> = None;
 
@@ -72,7 +72,7 @@ fn run(file: String) {
             if lyrics.is_ok() {
                 let lp = lyrics.as_ref().unwrap();
                 let playtime = player.playtime();
-                let mut bank: LyricsBank = lyrics_bank.unwrap_or(lp.get_bank(None));
+                let mut bank = lyrics_bank.unwrap_or(lp.get_bank(None));
 
                 if bank.is_expired(playtime) && bank.next_available() {
                     bank = lp.get_bank(Some(bank));
@@ -142,8 +142,7 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
 /// Generates a file name for the lyrics file.  
 /// This just replaces the file extension with `.json`.
 fn generate_lyrics_file_name(file: &String) -> String {
-    let file_str = file.as_str();
-    let no_ext = &file_str[0..file_str.rfind('.').unwrap()];
+    let no_ext = &file[0..file.rfind('.').unwrap()];
     let mut result = String::from(no_ext);
     result.push_str(".json");
 
