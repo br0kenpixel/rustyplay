@@ -46,7 +46,7 @@ pub enum DisplayEvent {
     /// The program was requested to mute or unmute the audio.
     ToggleMute,
     /// The user pressed a key which is not bound to any command.
-    Invalid,
+    Invalid(char),
     /// The program was requested to stop playing and exit.
     Quit,
 }
@@ -206,12 +206,11 @@ impl Display {
     /// Tries to capture a keypress, converting it to a [`DisplayEvent`](DisplayEvent)
     /// if successfull.
     ///
-    /// If [`ncurses::getch()`](ncurses::getch()) returns [`ERR`(ERR)],
     /// [`DisplayEvent::Invalid`](DisplayEvent::Invalid) is returned.
-    pub fn capture_event(&self) -> DisplayEvent {
+    pub fn capture_event(&self) -> Option<DisplayEvent> {
         match getch() {
-            ERR => DisplayEvent::Invalid,
-            key => char::from_u32(key as u32).unwrap().into(),
+            ERR => None,
+            key => Some(char::from_u32(key as u32).unwrap().into()),
         }
     }
 
@@ -522,7 +521,7 @@ impl Into<DisplayEvent> for char {
             'b' => DisplayEvent::MakePause,
             'v' => DisplayEvent::ToggleMute,
             'q' => DisplayEvent::Quit,
-            _ => DisplayEvent::Invalid,
+            c => DisplayEvent::Invalid(c),
         }
     }
 }

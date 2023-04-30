@@ -41,8 +41,7 @@ fn run(file: String) {
     let mut lyrics_bank: Option<LyricsBank> = None;
 
     /* Start UI */
-    let mut display: Display = Display::new(&file);
-    let mut display_event: DisplayEvent;
+    let mut display = Display::new(&file);
 
     display.init();
 
@@ -91,9 +90,11 @@ fn run(file: String) {
         display.staus_message_tick();
 
         // Getch will also refresh the display
-        display_event = display.capture_event();
+        match display.capture_event() {
+            None => (), /* no key was pressed */
+            Some(event) => process_display_event(event, &player, &mut display),
+        }
 
-        process_display_event(display_event, &player, &mut display);
         sleep(Duration::from_millis(10));
     }
 
@@ -127,8 +128,12 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
         }
         JumpNext => (), //TODO: Implement
         JumpBack => (), //TODO: Implement
-        Invalid => {
-            display.set_status_message("Unknown command", None);
+        Invalid(c) => {
+            if !c.is_ascii_alphanumeric() {
+                display.set_status_message("Unknown command", None);
+            } else {
+                display.set_status_message(&format!("Unknown command '{c}'"), None);
+            }
         }
         Quit => player.destroy(),
     }
