@@ -35,7 +35,7 @@ fn main() {
 /// Runs the program.
 fn run(file: String) {
     /* Initialize everything first, so the UI doesn't appear laggy/frozen for too long */
-    let afile = get_audio_info(&file);
+    let afile = AudioFile::new(&file);
     let player = Player::new(&file);
     let lyrics = LyricsProcessor::load_file(generate_lyrics_file_name(&file));
     let mut lyrics_bank: Option<LyricsBank> = None;
