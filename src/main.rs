@@ -110,29 +110,29 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
         MakePlay => {
             player.play();
             display.set_playback_status(true);
-            display.set_status_message("Resumed", None);
+            display.set_status_message("Resumed");
         }
         MakePause => {
             player.pause();
             display.set_playback_status(false);
-            display.set_status_message("Paused", None);
+            display.set_status_message("Paused");
         }
         ToggleMute => {
             if player.is_muted() {
                 player.unmute();
-                display.set_status_message("Unmuted", None);
+                display.set_status_message("Unmuted");
             } else {
                 player.mute();
-                display.set_status_message("Muted", None);
+                display.set_status_message("Muted");
             }
         }
         JumpNext => (), //TODO: Implement
         JumpBack => (), //TODO: Implement
         Invalid(c) => {
             if !c.is_ascii_alphanumeric() {
-                display.set_status_message("Unknown command", None);
+                display.set_status_message("Unknown command");
             } else {
-                display.set_status_message(&format!("Unknown command '{c}'"), None);
+                display.set_status_message(&format!("Unknown command '{c}'"));
             }
         }
         Quit => player.destroy(),

@@ -4,7 +4,7 @@ use crate::scrolledbuf::*;
 use crate::timer::Timer;
 use ncurses::*;
 use std::path::Path;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// Title string
 const HEADER: &str = "[br0kenpixel's Music Player]";
@@ -13,7 +13,7 @@ const INFOVIEW_OFFSET: i32 = 8;
 /// Used to adjust the location of the status message.
 const STATUSMSG_OFFSET: i32 = 6;
 /// The default display time for a status message in seconds.
-const STATUSMSG_DEFTIME: u64 = 2;
+const STATUSMSG_DISPLAYTIME: u64 = 2;
 /// Amount of time to wait before scrolling the text in milliseconds.
 const SCROLL_SHORT_TIME: u64 = 200;
 /// Amount of time to wait before reversing the scroll direction.
@@ -28,7 +28,7 @@ pub struct Display {
     /// Timer that handles scrolling
     scroll_timer: Timer,
     /// Timer that handles removing the status message after it's expired
-    message_timer: Option<Timer>,
+    message_timer: Option<Instant>,
 }
 
 /// Represents different events that occur when
@@ -381,11 +381,10 @@ impl Display {
         ));
     }
 
-    /// Displays a message on the bottom of the screen for a given amount of time.
+    /// Displays a message on the bottom of the screen.
     /// If there is another message being displayed, it will be cleared.
-    /// If `time` is not specified (set to `None`), [`STATUSMSG_DEFTIME`](STATUSMSG_DEFTIME)
-    /// is used as a default value.
-    pub fn set_status_message(&mut self, message: &str, time: Option<Duration>) {
+    /// The message will be displayed for [`STATUSMSG_DISPLAYTIME`](STATUSMSG_DISPLAYTIME) seconds.
+    pub fn set_status_message(&mut self, message: &str) {
         let message = format!("[ {message} ]");
         let xpos = (COLS() / 2) - (message.len() as i32 / 2);
 
@@ -397,9 +396,7 @@ impl Display {
         attr_on(A_STANDOUT());
         self.addstring(&message);
         attr_off(A_STANDOUT());
-        self.message_timer = Some(Timer::new(
-            time.unwrap_or(Duration::from_secs(STATUSMSG_DEFTIME)),
-        ));
+        self.message_timer = Some(Instant::now());
     }
 
     /// Clears the currently displayed status message.
@@ -426,7 +423,7 @@ impl Display {
     /// For good accuracy, this function should be called as often as possible.
     pub fn staus_message_tick(&mut self) {
         if let Some(timer) = &self.message_timer {
-            if timer.expired() {
+            if timer.elapsed().as_secs() >= STATUSMSG_DISPLAYTIME {
                 self.clear_status_message();
             }
         }
