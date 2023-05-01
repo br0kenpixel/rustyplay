@@ -7,7 +7,7 @@ description = "A terminal-based music player."
 repository = "https://github.com/br0kenpixel/rustyplay"
 
 [dependencies]
-rodio = "0.16.0"
+rodio = "0.17.1"
 sndfile = "0.1.1"
 ncurses = { version = "5.101.0", features = ["wide"] }
 pausable_clock = "1.0.1"
