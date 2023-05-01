@@ -64,12 +64,7 @@ impl Display {
         timeout(0);
         curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
 
-        let filename = Path::new(file)
-            .file_name()
-            .unwrap()
-            .to_owned()
-            .into_string()
-            .unwrap();
+        let filename = Path::new(file).file_name().unwrap().to_string_lossy();
 
         Display {
             infoview: newwin(6, COLS() - 8, INFOVIEW_OFFSET, 4),
