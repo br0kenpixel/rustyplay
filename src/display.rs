@@ -1,10 +1,10 @@
-use crate::audioinfo::{AudioFile, AudioFormat, AudioMeta};
+use crate::audioinfo::{AudioFile, AudioMeta};
 use crate::lyrics::{LyricsBank, LYRICS_BANK_SIZE};
 use crate::scrolledbuf::*;
 use crate::timer::Timer;
 use ncurses::*;
 use std::path::Path;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// Title string
 const HEADER: &str = "[br0kenpixel's Music Player]";
@@ -13,7 +13,7 @@ const INFOVIEW_OFFSET: i32 = 8;
 /// Used to adjust the location of the status message.
 const STATUSMSG_OFFSET: i32 = 6;
 /// The default display time for a status message in seconds.
-const STATUSMSG_DEFTIME: u64 = 2;
+const STATUSMSG_DISPLAYTIME: u64 = 2;
 /// Amount of time to wait before scrolling the text in milliseconds.
 const SCROLL_SHORT_TIME: u64 = 200;
 /// Amount of time to wait before reversing the scroll direction.
@@ -28,15 +28,13 @@ pub struct Display {
     /// Timer that handles scrolling
     scroll_timer: Timer,
     /// Timer that handles removing the status message after it's expired
-    message_timer: Option<Timer>,
+    message_timer: Option<Instant>,
 }
 
 /// Represents different events that occur when
 /// using the keyboard controls.
 #[derive(PartialEq, Clone, Copy)]
 pub enum DisplayEvent {
-    /// Nothing to do (no key was pressed)
-    Nothing,
     /// The program was requested to resume playback.
     MakePlay,
     /// The program was requested to pause playback.
@@ -48,7 +46,7 @@ pub enum DisplayEvent {
     /// The program was requested to mute or unmute the audio.
     ToggleMute,
     /// The user pressed a key which is not bound to any command.
-    Invalid,
+    Invalid(char),
     /// The program was requested to stop playing and exit.
     Quit,
 }
@@ -66,12 +64,7 @@ impl Display {
         timeout(0);
         curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
 
-        let filename = Path::new(file)
-            .file_name()
-            .unwrap()
-            .to_owned()
-            .into_string()
-            .unwrap();
+        let filename = Path::new(file).file_name().unwrap().to_string_lossy();
 
         Display {
             infoview: newwin(6, COLS() - 8, INFOVIEW_OFFSET, 4),
@@ -205,29 +198,15 @@ impl Display {
         endwin();
     }
 
-    /// A customized version of [`ncurses::getch()`](ncurses::getch()).  
-    /// Returns an `Option<i32>` instead of returning an `i32` directly.  
-    ///   
-    /// If [`ncurses::getch()`](ncurses::getch()) returns [`ERR`(ERR)],
-    /// `None` is returned instead.
-    pub fn getch(&self) -> Option<i32> {
+    /// Tries to capture a keypress, converting it to a [`DisplayEvent`](DisplayEvent)
+    /// if successfull.
+    ///
+    /// [`DisplayEvent::Invalid`](DisplayEvent::Invalid) is returned.
+    pub fn capture_event(&self) -> Option<DisplayEvent> {
         match getch() {
             ERR => None,
-            c => Some(c),
+            key => Some(char::from_u32(key as u32).unwrap().into()),
         }
-    }
-
-    /// __This is for debugging purposes only.__  
-    /// A blocking version of [`getch()`](Self::getch()).  
-    /// This may be useful since [`Display::new()`](Self::new()) enables non-blocking mode
-    /// to prevent the player from freezing when checking for input.
-    #[allow(dead_code)]
-    pub fn blocking_getch(&self) -> i32 {
-        let mut res = self.getch();
-        while res.is_none() {
-            res = self.getch();
-        }
-        res.unwrap()
     }
 
     /// Alias for [`Display::waddchar()`](Self::waddchar()) with [`stdscr()`](ncurses::stdscr()) as the `win` argument.
@@ -361,11 +340,7 @@ impl Display {
                 true => "Lossless",
                 false => "Lossy",
             },
-            match fileinfo.format {
-                AudioFormat::FLAC => "FLAC",
-                AudioFormat::WAV => "WAV",
-                AudioFormat::OGG => "OGG",
-            }
+            fileinfo.format,
         ));
     }
 
@@ -397,11 +372,10 @@ impl Display {
         ));
     }
 
-    /// Displays a message on the bottom of the screen for a given amount of time.
+    /// Displays a message on the bottom of the screen.
     /// If there is another message being displayed, it will be cleared.
-    /// If `time` is not specified (set to `None`), [`STATUSMSG_DEFTIME`](STATUSMSG_DEFTIME)
-    /// is used as a default value.
-    pub fn set_status_message(&mut self, message: &str, time: Option<Duration>) {
+    /// The message will be displayed for [`STATUSMSG_DISPLAYTIME`](STATUSMSG_DISPLAYTIME) seconds.
+    pub fn set_status_message(&mut self, message: &str) {
         let message = format!("[ {message} ]");
         let xpos = (COLS() / 2) - (message.len() as i32 / 2);
 
@@ -413,9 +387,7 @@ impl Display {
         attr_on(A_STANDOUT());
         self.addstring(&message);
         attr_off(A_STANDOUT());
-        self.message_timer = Some(Timer::new(
-            time.unwrap_or(Duration::from_secs(STATUSMSG_DEFTIME)),
-        ));
+        self.message_timer = Some(Instant::now());
     }
 
     /// Clears the currently displayed status message.
@@ -442,7 +414,7 @@ impl Display {
     /// For good accuracy, this function should be called as often as possible.
     pub fn staus_message_tick(&mut self) {
         if let Some(timer) = &self.message_timer {
-            if timer.expired() {
+            if timer.elapsed().as_secs() >= STATUSMSG_DISPLAYTIME {
                 self.clear_status_message();
             }
         }
@@ -501,7 +473,7 @@ impl Display {
         for line in bank.lines.iter().take(LYRICS_BANK_SIZE) {
             self.wmoveto(ypos, 2, self.infoview);
             self.waddstr("   ", self.infoview);
-            self.waddstring(&line.text, self.infoview);
+            self.waddstring(&line.words, self.infoview);
             ypos += 1;
         }
     }
@@ -525,5 +497,19 @@ impl Display {
         self.waddstr("-> ", self.infoview);
         wchgat(self.infoview, COLS() - 9 - 5, A_BOLD(), COLOR_WHITE);
         wattroff(self.infoview, A_BOLD());
+    }
+}
+
+impl Into<DisplayEvent> for char {
+    fn into(self) -> DisplayEvent {
+        match self {
+            'g' => DisplayEvent::MakePlay,
+            'f' => DisplayEvent::JumpBack,
+            'h' => DisplayEvent::JumpNext,
+            'b' => DisplayEvent::MakePause,
+            'v' => DisplayEvent::ToggleMute,
+            'q' => DisplayEvent::Quit,
+            c => DisplayEvent::Invalid(c),
+        }
     }
 }

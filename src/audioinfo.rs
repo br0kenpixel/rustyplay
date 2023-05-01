@@ -1,5 +1,4 @@
 use sndfile::*;
-use std::ffi::OsStr;
 use std::path::Path;
 
 /// This structure represents metadata of an Audio file
@@ -42,107 +41,110 @@ pub struct AudioFile {
     pub metadata: AudioMeta,
 }
 
-/// Generates an [`AudioFile`](AudioFile) structure by reading
-/// an audio file.
-///
-/// # Arguments
-/// * `file` - A [`String`](String) containing the path to the audio file.
-///
-/// ## Panics
-/// If the given path to the audio file is invalid, this will panic.
-pub fn get_audio_info(file: &String) -> AudioFile {
-    let mut snd: SndFile = _open_file(file);
-    let samplerate: usize = snd.get_samplerate();
-    let n_channels = snd.get_channels();
-    let n_frame = snd.len().unwrap();
-    let fmt = _get_fmt(file);
+impl AudioFile {
+    /// Generates an [`AudioFile`](AudioFile) structure by reading
+    /// an audio file.
+    ///
+    /// # Arguments
+    /// * `file` - A [`String`](String) containing the path to the audio file.
+    ///
+    /// ## Panics
+    /// If the given path to the audio file is invalid, this will panic.
+    pub fn new(file: &str) -> Self {
+        let mut snd = Self::open_file(file);
+        let samplerate: usize = snd.get_samplerate();
+        let n_frame = snd.len().unwrap();
+        let fmt = AudioFormat::from_path(file).expect("Failed to parse format");
 
-    AudioFile {
-        file_name: file.clone(),
-        format: fmt,
-        length: n_frame as f64 / samplerate as f64,
-        sample_rate: samplerate,
-        stereo: n_channels > 1,
-        lossless: matches!(fmt, AudioFormat::FLAC | AudioFormat::WAV),
-        metadata: _get_meta(&snd),
+        Self {
+            file_name: file.to_string(),
+            format: fmt,
+            length: n_frame as f64 / samplerate as f64,
+            sample_rate: samplerate,
+            stereo: snd.get_channels() > 1,
+            lossless: fmt.is_lossless(),
+            metadata: snd.into(),
+        }
+    }
+
+    /// Opens an audio file with [`sndfile`](sndfile)
+    ///
+    /// # Arguments
+    /// * `file` - A [`String`](String) containing the path to the audio file.
+    ///
+    /// ## Panics
+    /// If the given path to the audio file is invalid, this will panic.
+    fn open_file(file: &str) -> SndFile {
+        sndfile::OpenOptions::ReadOnly(ReadOptions::Auto)
+            .from_path(file)
+            .unwrap()
     }
 }
 
-/// Opens an audio file with [`sndfile`](sndfile)
-///
-/// # Arguments
-/// * `file` - A [`String`](String) containing the path to the audio file.
-///
-/// ## Panics
-/// If the given path to the audio file is invalid, this will panic.
-fn _open_file(file: &String) -> SndFile {
-    sndfile::OpenOptions::ReadOnly(ReadOptions::Auto)
-        .from_path(file)
-        .unwrap()
-}
+impl AudioFormat {
+    /// Gets the file format of the given audio file by checking
+    /// it's file extension, then returns an enum value from [`AudioFormat`](AudioFormat).
+    ///
+    /// # Arguments
+    /// * `file` - A [`String`](String) containing the path to the audio file.
+    ///
+    /// ## Panics
+    /// If the file has an extension other than `.wav`, `.flac` or `.ogg` this will panic.
+    ///
+    /// ### Notes
+    /// This function is __not__ case-sensitive, as the given file path is converted to
+    /// lowercase, before it's compared.
+    pub fn from_path(path: &str) -> Result<Self, ()> {
+        let ext = Path::new(path).extension().unwrap().to_string_lossy();
 
-/// Gets the file format of the given audio file by checking
-/// it's file extension, then returns an enum value from [`AudioFormat`](AudioFormat).
-///
-/// # Arguments
-/// * `file` - A [`String`](String) containing the path to the audio file.
-///
-/// ## Panics
-/// If the file has an extension other than `.wav`, `.flac` or `.ogg` this will panic.
-///
-/// ### Notes
-/// This function is __not__ case-sensitive, as the given file path is converted to
-/// lowercase, before it's compared.
-fn _get_fmt(file: &String) -> AudioFormat {
-    let ext = _get_extension(file);
-    match ext.to_lowercase().as_str() {
-        "flac" => AudioFormat::FLAC,
-        "wav" => AudioFormat::WAV,
-        "ogg" => AudioFormat::OGG,
-        _ => panic!("_get_fmt() failed"),
+        match ext.to_lowercase().as_str() {
+            "flac" => Ok(AudioFormat::FLAC),
+            "wav" => Ok(AudioFormat::WAV),
+            "ogg" => Ok(AudioFormat::OGG),
+            _ => Err(()),
+        }
+    }
+
+    pub fn is_lossless(&self) -> bool {
+        matches!(self, AudioFormat::FLAC | AudioFormat::WAV)
     }
 }
 
-/// Gets the necessary metadata from an opened audio file ([`SndFile`](SndFile)).  
-/// It'll read: `Title` ([`TagType::Title`](TagType::Title)),
-///             `Album` ([`TagType::Album`](TagType::Album)) and
-///             `Artist` ([`TagType::Artist`](TagType::Artist))
-///
-/// # Arguments
-/// * `sndfile` - An opened audio file ([`SndFile`](SndFile)).
-///
-/// ## Panics
-/// Depends on [`SndFile::get_tag()`](SndFile::get_tag())
-///
-/// ### Notes
-/// In case the read tag is not defined, `"Unknown"` is used as a placeholder.
-fn _get_meta(sndfile: &SndFile) -> AudioMeta {
-    AudioMeta {
-        title: sndfile
-            .get_tag(TagType::Title)
-            .unwrap_or_else(|| "Unknown".to_owned()),
-        album: sndfile
-            .get_tag(TagType::Album)
-            .unwrap_or_else(|| "Unknown".to_owned()),
-        artist: sndfile
-            .get_tag(TagType::Artist)
-            .unwrap_or_else(|| "Unknown".to_owned()),
+impl std::fmt::Display for AudioFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::FLAC => "FLAC",
+                Self::OGG => "OGG",
+                Self::WAV => "WAV",
+            }
+        )
     }
 }
 
-/// Returns the extension of the given file.  
-/// Used by [`_get_fmt`](_get_fmt).
-///
-/// # Arguments
-/// * `file` - A [`String`](String) containing the path to the audio file.
-///
-/// ### Notes
-/// The file extension is converted to lowercase.
-fn _get_extension(file: &String) -> String {
-    let res = Path::new(file)
-        .extension()
-        .and_then(OsStr::to_str)
-        .expect("Invalid file name")
-        .to_lowercase();
-    res
+impl Into<AudioMeta> for SndFile {
+    /// Gets the necessary metadata from an opened audio file ([`SndFile`](SndFile)).  
+    /// It'll read: `Title` ([`TagType::Title`](TagType::Title)),
+    ///             `Album` ([`TagType::Album`](TagType::Album)) and
+    ///             `Artist` ([`TagType::Artist`](TagType::Artist))
+    ///
+    /// # Arguments
+    /// * `sndfile` - An opened audio file ([`SndFile`](SndFile)).
+    ///
+    /// ## Panics
+    /// Depends on [`SndFile::get_tag()`](SndFile::get_tag())
+    ///
+    /// ### Notes
+    /// In case the read tag is not defined, `"Unknown"` is used as a placeholder.
+    fn into(self) -> AudioMeta {
+        AudioMeta {
+            title: self.get_tag(TagType::Title).unwrap_or("Unknown".to_owned()),
+            album: self.get_tag(TagType::Album).unwrap_or("Unknown".to_owned()),
+            artist: self
+                .get_tag(TagType::Artist)
+                .unwrap_or("Unknown".to_owned()),
+        }
+    }
 }

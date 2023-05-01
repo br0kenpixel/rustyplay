@@ -1,17 +1,18 @@
 [package]
 name = "musicplayer"
-version = "1.0.5"
+version = "1.0.6"
 edition = "2021"
 authors = ["Fábián Varga", "Fábián Varga <varga2mail@gmail.com>"]
 description = "A terminal-based music player."
 repository = "https://github.com/br0kenpixel/rustyplay"
 
 [dependencies]
-rodio = "0.16.0"
+rodio = "0.17.1"
 sndfile = "0.1.1"
 ncurses = { version = "5.101.0", features = ["wide"] }
 pausable_clock = "1.0.1"
-json = "0.12.4"
+serde = { version = "1.0.159", features = ["derive"] }
+serde_json = "1.0.95"
 
 [profile.dev.package."*"]
 opt-level = 1
