@@ -1,4 +1,4 @@
-use crate::audioinfo::{AudioFile, AudioFormat, AudioMeta};
+use crate::audioinfo::{AudioFile, AudioMeta};
 use crate::lyrics::{LyricsBank, LYRICS_BANK_SIZE};
 use crate::scrolledbuf::*;
 use crate::timer::Timer;
@@ -345,11 +345,7 @@ impl Display {
                 true => "Lossless",
                 false => "Lossy",
             },
-            match fileinfo.format {
-                AudioFormat::FLAC => "FLAC",
-                AudioFormat::WAV => "WAV",
-                AudioFormat::OGG => "OGG",
-            }
+            fileinfo.format,
         ));
     }
 

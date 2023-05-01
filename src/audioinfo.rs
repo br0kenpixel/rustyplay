@@ -110,6 +110,20 @@ impl AudioFormat {
     }
 }
 
+impl std::fmt::Display for AudioFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::FLAC => "FLAC",
+                Self::OGG => "OGG",
+                Self::WAV => "WAV",
+            }
+        )
+    }
+}
+
 impl Into<AudioMeta> for SndFile {
     /// Gets the necessary metadata from an opened audio file ([`SndFile`](SndFile)).  
     /// It'll read: `Title` ([`TagType::Title`](TagType::Title)),
