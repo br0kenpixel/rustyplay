@@ -99,4 +99,24 @@ impl Player {
     pub fn playtime(&self) -> Duration {
         Instant::from(self.clock.now()) - self.start_time
     }
+
+    pub fn inc_volume(&self) {
+        if self.sink.volume() == 1.0 {
+            return;
+        }
+
+        self.sink.set_volume(self.sink.volume() + 0.1);
+    }
+
+    pub fn dec_volume(&self) {
+        if self.sink.volume() == 0.0 {
+            return;
+        }
+
+        self.sink.set_volume(self.sink.volume() - 0.1);
+    }
+
+    pub fn get_volume(&self) -> u8 {
+        (self.sink.volume() * 100.0) as u8
+    }
 }

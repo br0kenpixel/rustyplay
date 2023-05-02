@@ -128,6 +128,14 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
         }
         JumpNext => (), //TODO: Implement
         JumpBack => (), //TODO: Implement
+        VolUp => {
+            player.inc_volume();
+            display.set_status_message(&format!("+ Volume ({}%)", player.get_volume()));
+        }
+        VolDown => {
+            player.dec_volume();
+            display.set_status_message(&format!("- Volume ({}%)", player.get_volume()));
+        }
         Invalid(c) => {
             if !c.is_ascii_alphanumeric() {
                 display.set_status_message("Unknown command");

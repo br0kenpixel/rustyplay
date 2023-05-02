@@ -45,6 +45,10 @@ pub enum DisplayEvent {
     JumpBack,
     /// The program was requested to mute or unmute the audio.
     ToggleMute,
+    /// The program was requested to increase the playback volume.
+    VolUp,
+    /// The program was requested to decrease the playback volume.
+    VolDown,
     /// The user pressed a key which is not bound to any command.
     Invalid(char),
     /// The program was requested to stop playing and exit.
