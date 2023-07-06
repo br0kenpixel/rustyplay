@@ -125,7 +125,7 @@ impl std::fmt::Display for AudioFormat {
     }
 }
 
-impl Into<AudioMeta> for SndFile {
+impl From<SndFile> for AudioMeta {
     /// Gets the necessary metadata from an opened audio file ([`SndFile`](SndFile)).  
     /// It'll read: `Title` ([`TagType::Title`](TagType::Title)),
     ///             `Album` ([`TagType::Album`](TagType::Album)) and
@@ -139,11 +139,15 @@ impl Into<AudioMeta> for SndFile {
     ///
     /// ### Notes
     /// In case the read tag is not defined, `"Unknown"` is used as a placeholder.
-    fn into(self) -> AudioMeta {
-        AudioMeta {
-            title: self.get_tag(TagType::Title).unwrap_or("Unknown".to_owned()),
-            album: self.get_tag(TagType::Album).unwrap_or("Unknown".to_owned()),
-            artist: self
+    fn from(value: SndFile) -> Self {
+        Self {
+            title: value
+                .get_tag(TagType::Title)
+                .unwrap_or("Unknown".to_owned()),
+            album: value
+                .get_tag(TagType::Album)
+                .unwrap_or("Unknown".to_owned()),
+            artist: value
                 .get_tag(TagType::Artist)
                 .unwrap_or("Unknown".to_owned()),
         }
