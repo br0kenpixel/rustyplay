@@ -504,9 +504,9 @@ impl Display {
     }
 }
 
-impl Into<DisplayEvent> for char {
-    fn into(self) -> DisplayEvent {
-        match self {
+impl From<char> for DisplayEvent {
+    fn from(value: char) -> Self {
+        match value {
             'g' => DisplayEvent::MakePlay,
             'f' => DisplayEvent::JumpBack,
             'h' => DisplayEvent::JumpNext,
