@@ -327,7 +327,7 @@ impl Display {
         // Constrain
         use_blocks = use_blocks.clamp(0, max_block_count);
 
-        self.print_progress_blocks(use_blocks as i32, max_block_count);
+        self.print_progress_blocks(use_blocks, max_block_count);
     }
 
     /// Update the file quality display in the TUI.
