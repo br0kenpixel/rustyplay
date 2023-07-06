@@ -4,6 +4,8 @@ use std::fs::File;
 use std::io::BufReader;
 use std::time::{Duration, Instant};
 
+const VOL_CHANGE_AMOUNT: u8 = 10;
+
 /// This structure represents an audio player.
 pub struct Player {
     /// *Unused but needs to be kept in memory.*
@@ -101,22 +103,29 @@ impl Player {
     }
 
     pub fn inc_volume(&self) {
-        if self.sink.volume() == 1.0 {
+        let current = self.get_volume();
+        if current == 100 {
             return;
         }
 
-        self.sink.set_volume(self.sink.volume() + 0.1);
+        self.set_volume(current + VOL_CHANGE_AMOUNT);
     }
 
     pub fn dec_volume(&self) {
-        if self.sink.volume() == 0.0 {
+        let current = self.get_volume();
+        if current == 10 {
             return;
         }
 
-        self.sink.set_volume(self.sink.volume() - 0.1);
+        self.set_volume(current - VOL_CHANGE_AMOUNT);
     }
 
     pub fn get_volume(&self) -> u8 {
         (self.sink.volume() * 100.0) as u8
+    }
+
+    fn set_volume(&self, val: u8) {
+        let float = val as f32 / 100.0;
+        self.sink.set_volume(float);
     }
 }
