@@ -149,7 +149,7 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
 
 /// Generates a file name for the lyrics file.  
 /// This just replaces the file extension with `.json`.
-fn generate_lyrics_file_name(file: &String) -> String {
+fn generate_lyrics_file_name(file: &str) -> String {
     let no_ext = &file[0..file.rfind('.').unwrap()];
     let mut result = String::from(no_ext);
     result.push_str(".json");
