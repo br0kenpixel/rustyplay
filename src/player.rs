@@ -25,13 +25,13 @@ pub struct Player {
 impl Player {
     /// Creates a new player from a given file.  
     /// *The playback is paused by default.*
-    pub fn new(file: &String) -> Player {
+    pub fn new(file: &str) -> Player {
         let (_stream, _stream_handle) =
             OutputStream::try_default().expect("Unable to open audio device");
 
         let sink = Sink::try_new(&_stream_handle).expect("Unable to create Sink");
 
-        let file = BufReader::new(File::open(&file).expect("Unable to open file"));
+        let file = BufReader::new(File::open(file).expect("Unable to open file"));
 
         let source = Decoder::new(file).expect("Unable to create decoder");
         /* type: Decoder<BufReader<File>> */
