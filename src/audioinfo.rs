@@ -10,6 +10,7 @@ pub struct AudioMeta {
 }
 
 /// Identifies an audio file format
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AudioFormat {
     /// Free Lossless Audio Codec
