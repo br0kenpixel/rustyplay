@@ -46,8 +46,10 @@ pub enum DisplayEvent {
     /// The program was requested to mute or unmute the audio.
     ToggleMute,
     /// The program was requested to increase the playback volume.
+    #[allow(dead_code)]
     VolUp,
     /// The program was requested to decrease the playback volume.
+    #[allow(dead_code)]
     VolDown,
     /// The user pressed a key which is not bound to any command.
     Invalid(char),
@@ -241,13 +243,13 @@ impl Display {
     }
 
     /// Alias for [`Display::waddstring()`](Self::waddstring()) with [`stdscr()`](ncurses::stdscr()) as the `win` argument.
-    fn addstring(&self, text: &String) {
+    fn addstring(&self, text: &str) {
         self.waddstring(text, stdscr());
     }
 
     /// Alias for [`Display::waddstr()`](Self::waddstr()) but takes a [`&String`](String) instead of a [`&str`](str).
-    fn waddstring(&self, text: &String, win: WINDOW) {
-        self.waddstr(text.as_str(), win);
+    fn waddstring(&self, text: &str, win: WINDOW) {
+        self.waddstr(text, win);
     }
 
     /// Alias for [`ncurses::addstr()`](ncurses::addstr()) but takes a [`u32`](u32) so it can print Unicode characters.  
