@@ -175,7 +175,9 @@ impl Display {
 
         //self.moveto(LINES() - 2, 2);
         self.print_control('B', "Pause", true);
-        self.print_control('V', "Mute", false);
+        self.print_control('Y', "Vol+", true);
+        self.print_control('X', "Vol-", true);
+        self.print_control('M', "Mute", false);
 
         self.moveto(LINES() - 2, COLS() - 2 - EXIT_CTL_TXT.len() as i32);
         self.addstr(EXIT_CTL_TXT);
@@ -513,8 +515,10 @@ impl From<char> for DisplayEvent {
             'f' => DisplayEvent::JumpBack,
             'h' => DisplayEvent::JumpNext,
             'b' => DisplayEvent::MakePause,
-            'v' => DisplayEvent::ToggleMute,
+            'm' => DisplayEvent::ToggleMute,
             'q' => DisplayEvent::Quit,
+            'y' => DisplayEvent::VolUp,
+            'x' => DisplayEvent::VolDown,
             c => DisplayEvent::Invalid(c),
         }
     }
