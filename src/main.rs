@@ -4,16 +4,17 @@ use std::thread::sleep;
 use std::time::Duration;
 
 mod audioinfo;
-use crate::audioinfo::*;
 mod display;
-mod scrolledbuf;
-mod timer;
-use crate::display::*;
-mod player;
-use crate::player::*;
 mod lyrics;
 mod lyrics_parse;
+mod player;
+mod scrolledbuf;
+mod timer;
+
+use crate::audioinfo::*;
+use crate::display::*;
 use crate::lyrics::*;
+use crate::player::*;
 
 /// A list of supported audio formats.
 const SUPPORTED_FORMATS: [&str; 3] = ["wav", "flac", "ogg"];
