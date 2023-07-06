@@ -25,7 +25,10 @@ fn main() {
     if args.len() != 2 {
         eprintln!("Invalid arguments:");
         eprintln!("Usage:\n {} [FILE]", args[0]);
-        eprintln!("Supported formats: {SUPPORTED_FORMATS:?}");
+        eprintln!(
+            "Supported formats: {}",
+            SUPPORTED_FORMATS.map(str::to_ascii_uppercase).join(", ")
+        );
         exit(1);
     }
 
