@@ -4,16 +4,17 @@ use std::thread::sleep;
 use std::time::Duration;
 
 mod audioinfo;
-use crate::audioinfo::*;
 mod display;
-mod scrolledbuf;
-mod timer;
-use crate::display::*;
-mod player;
-use crate::player::*;
 mod lyrics;
 mod lyrics_parse;
+mod player;
+mod scrolledbuf;
+mod timer;
+
+use crate::audioinfo::*;
+use crate::display::*;
 use crate::lyrics::*;
+use crate::player::*;
 
 /// A list of supported audio formats.
 const SUPPORTED_FORMATS: [&str; 3] = ["wav", "flac", "ogg"];
@@ -24,7 +25,10 @@ fn main() {
     if args.len() != 2 {
         eprintln!("Invalid arguments:");
         eprintln!("Usage:\n {} [FILE]", args[0]);
-        eprintln!("Supported formats: {SUPPORTED_FORMATS:?}");
+        eprintln!(
+            "Supported formats: {}",
+            SUPPORTED_FORMATS.map(str::to_ascii_uppercase).join(", ")
+        );
         exit(1);
     }
 
@@ -128,6 +132,14 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
         }
         JumpNext => (), //TODO: Implement
         JumpBack => (), //TODO: Implement
+        VolUp => {
+            player.inc_volume();
+            display.set_status_message(&format!("+ Volume ({}%)", player.get_volume()));
+        }
+        VolDown => {
+            player.dec_volume();
+            display.set_status_message(&format!("- Volume ({}%)", player.get_volume()));
+        }
         Invalid(c) => {
             if !c.is_ascii_alphanumeric() {
                 display.set_status_message("Unknown command");
@@ -141,7 +153,7 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
 
 /// Generates a file name for the lyrics file.  
 /// This just replaces the file extension with `.json`.
-fn generate_lyrics_file_name(file: &String) -> String {
+fn generate_lyrics_file_name(file: &str) -> String {
     let no_ext = &file[0..file.rfind('.').unwrap()];
     let mut result = String::from(no_ext);
     result.push_str(".json");

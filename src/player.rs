@@ -4,6 +4,8 @@ use std::fs::File;
 use std::io::BufReader;
 use std::time::{Duration, Instant};
 
+const VOL_CHANGE_AMOUNT: u8 = 10;
+
 /// This structure represents an audio player.
 pub struct Player {
     /// *Unused but needs to be kept in memory.*
@@ -25,13 +27,13 @@ pub struct Player {
 impl Player {
     /// Creates a new player from a given file.  
     /// *The playback is paused by default.*
-    pub fn new(file: &String) -> Player {
+    pub fn new(file: &str) -> Player {
         let (_stream, _stream_handle) =
             OutputStream::try_default().expect("Unable to open audio device");
 
         let sink = Sink::try_new(&_stream_handle).expect("Unable to create Sink");
 
-        let file = BufReader::new(File::open(&file).expect("Unable to open file"));
+        let file = BufReader::new(File::open(file).expect("Unable to open file"));
 
         let source = Decoder::new(file).expect("Unable to create decoder");
         /* type: Decoder<BufReader<File>> */
@@ -98,5 +100,32 @@ impl Player {
     /// Returns the current playtime.
     pub fn playtime(&self) -> Duration {
         Instant::from(self.clock.now()) - self.start_time
+    }
+
+    pub fn inc_volume(&self) {
+        let current = self.get_volume();
+        if current == 100 {
+            return;
+        }
+
+        self.set_volume(current + VOL_CHANGE_AMOUNT);
+    }
+
+    pub fn dec_volume(&self) {
+        let current = self.get_volume();
+        if current == 10 {
+            return;
+        }
+
+        self.set_volume(current - VOL_CHANGE_AMOUNT);
+    }
+
+    pub fn get_volume(&self) -> u8 {
+        (self.sink.volume() * 100.0) as u8
+    }
+
+    fn set_volume(&self, val: u8) {
+        let float = val as f32 / 100.0;
+        self.sink.set_volume(float);
     }
 }

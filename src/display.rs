@@ -45,6 +45,12 @@ pub enum DisplayEvent {
     JumpBack,
     /// The program was requested to mute or unmute the audio.
     ToggleMute,
+    /// The program was requested to increase the playback volume.
+    #[allow(dead_code)]
+    VolUp,
+    /// The program was requested to decrease the playback volume.
+    #[allow(dead_code)]
+    VolDown,
     /// The user pressed a key which is not bound to any command.
     Invalid(char),
     /// The program was requested to stop playing and exit.
@@ -169,7 +175,9 @@ impl Display {
 
         //self.moveto(LINES() - 2, 2);
         self.print_control('B', "Pause", true);
-        self.print_control('V', "Mute", false);
+        self.print_control('Y', "Vol+", true);
+        self.print_control('X', "Vol-", true);
+        self.print_control('M', "Mute", false);
 
         self.moveto(LINES() - 2, COLS() - 2 - EXIT_CTL_TXT.len() as i32);
         self.addstr(EXIT_CTL_TXT);
@@ -237,13 +245,13 @@ impl Display {
     }
 
     /// Alias for [`Display::waddstring()`](Self::waddstring()) with [`stdscr()`](ncurses::stdscr()) as the `win` argument.
-    fn addstring(&self, text: &String) {
+    fn addstring(&self, text: &str) {
         self.waddstring(text, stdscr());
     }
 
     /// Alias for [`Display::waddstr()`](Self::waddstr()) but takes a [`&String`](String) instead of a [`&str`](str).
-    fn waddstring(&self, text: &String, win: WINDOW) {
-        self.waddstr(text.as_str(), win);
+    fn waddstring(&self, text: &str, win: WINDOW) {
+        self.waddstr(text, win);
     }
 
     /// Alias for [`ncurses::addstr()`](ncurses::addstr()) but takes a [`u32`](u32) so it can print Unicode characters.  
@@ -323,7 +331,7 @@ impl Display {
         // Constrain
         use_blocks = use_blocks.clamp(0, max_block_count);
 
-        self.print_progress_blocks(use_blocks as i32, max_block_count);
+        self.print_progress_blocks(use_blocks, max_block_count);
     }
 
     /// Update the file quality display in the TUI.
@@ -500,15 +508,17 @@ impl Display {
     }
 }
 
-impl Into<DisplayEvent> for char {
-    fn into(self) -> DisplayEvent {
-        match self {
+impl From<char> for DisplayEvent {
+    fn from(value: char) -> Self {
+        match value {
             'g' => DisplayEvent::MakePlay,
             'f' => DisplayEvent::JumpBack,
             'h' => DisplayEvent::JumpNext,
             'b' => DisplayEvent::MakePause,
-            'v' => DisplayEvent::ToggleMute,
+            'm' => DisplayEvent::ToggleMute,
             'q' => DisplayEvent::Quit,
+            'y' => DisplayEvent::VolUp,
+            'x' => DisplayEvent::VolDown,
             c => DisplayEvent::Invalid(c),
         }
     }
