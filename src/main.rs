@@ -74,7 +74,8 @@ fn run(file: String) {
             display.handle_scroll();
 
             if lyrics.is_ok() {
-                let lp = lyrics.as_ref().unwrap();
+                // SAFETY: We just checked if `lyrics` is `Ok()`.
+                let lp = unsafe { lyrics.as_ref().unwrap_unchecked() };
                 let playtime = player.playtime();
                 let mut bank = lyrics_bank.unwrap_or(lp.get_bank(None));
 

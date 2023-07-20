@@ -498,7 +498,8 @@ impl Display {
         if active.is_none() {
             return;
         }
-        let active = active.unwrap();
+        // SAFETY: We just checked if `active` is `None`.
+        let active = unsafe { active.unwrap_unchecked() };
 
         self.wmoveto(1 + active as i32, 2, self.infoview);
         wattron(self.infoview, A_BOLD());
