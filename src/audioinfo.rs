@@ -53,7 +53,7 @@ impl AudioFile {
     /// If the given path to the audio file is invalid, this will panic.
     pub fn new(file: &str) -> Self {
         let mut snd = Self::open_file(file);
-        let samplerate: usize = snd.get_samplerate();
+        let samplerate = snd.get_samplerate();
         let n_frame = snd.len().unwrap();
         let fmt = AudioFormat::from_path(file).expect("Failed to parse format");
 

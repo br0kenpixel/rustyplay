@@ -42,7 +42,7 @@ fn run(file: String) {
     let afile = AudioFile::new(&file);
     let player = Player::new(&file);
     let lyrics = LyricsProcessor::load_file(generate_lyrics_file_name(&file));
-    let mut lyrics_bank: Option<LyricsBank> = None;
+    let mut lyrics_bank = None;
 
     /* Start UI */
     let mut display = Display::new(&file);

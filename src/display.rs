@@ -108,8 +108,8 @@ impl Display {
     /// - Progress bar (static parts only - like the borders)
     /// - etc...
     fn set_header(&self) {
-        let ypos: i32 = 0;
-        let xpos: i32 = (COLS() / 2) - (HEADER.len() as i32 / 2);
+        let ypos = 0;
+        let xpos = (COLS() / 2) - (HEADER.len() as i32 / 2);
 
         self.moveto(ypos, xpos);
         self.addstr(HEADER);
