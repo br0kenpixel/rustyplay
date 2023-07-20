@@ -42,10 +42,6 @@ pub enum DisplayEvent {
     MakePlay,
     /// The program was requested to pause playback.
     MakePause,
-    /// The program was requested to jump to the next track in the queue.
-    JumpNext,
-    /// The program was requested to jump to the previous track in the queue.
-    JumpBack,
     /// The program was requested to mute or unmute the audio.
     ToggleMute,
     /// The program was requested to increase the playback volume.
@@ -517,8 +513,6 @@ impl From<char> for DisplayEvent {
     fn from(value: char) -> Self {
         match value {
             'g' => Self::MakePlay,
-            'f' => Self::JumpBack,
-            'h' => Self::JumpNext,
             'b' => Self::MakePause,
             'm' => Self::ToggleMute,
             'q' => Self::Quit,

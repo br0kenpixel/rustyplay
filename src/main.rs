@@ -138,7 +138,6 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
                 display.set_status_message("Muted");
             }
         }
-        DisplayEvent::JumpNext | DisplayEvent::JumpBack => (), //TODO: Implement
         DisplayEvent::VolUp => {
             player.inc_volume();
             display.set_status_message(&format!("+ Volume ({}%)", player.get_volume()));
