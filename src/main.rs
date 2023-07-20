@@ -117,22 +117,19 @@ fn run(file: &str) {
 }
 
 /// Process the current [`DisplayEvent`](DisplayEvent).
-#[allow(clippy::enum_glob_use)]
 fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Display) {
-    use DisplayEvent::*;
-
     match event {
-        MakePlay => {
+        DisplayEvent::MakePlay => {
             player.play();
             display.set_playback_status(true);
             display.set_status_message("Resumed");
         }
-        MakePause => {
+        DisplayEvent::MakePause => {
             player.pause();
             display.set_playback_status(false);
             display.set_status_message("Paused");
         }
-        ToggleMute => {
+        DisplayEvent::ToggleMute => {
             if player.is_muted() {
                 player.unmute();
                 display.set_status_message("Unmuted");
@@ -141,23 +138,23 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
                 display.set_status_message("Muted");
             }
         }
-        JumpNext | JumpBack => (), //TODO: Implement
-        VolUp => {
+        DisplayEvent::JumpNext | DisplayEvent::JumpBack => (), //TODO: Implement
+        DisplayEvent::VolUp => {
             player.inc_volume();
             display.set_status_message(&format!("+ Volume ({}%)", player.get_volume()));
         }
-        VolDown => {
+        DisplayEvent::VolDown => {
             player.dec_volume();
             display.set_status_message(&format!("- Volume ({}%)", player.get_volume()));
         }
-        Invalid(c) => {
+        DisplayEvent::Invalid(c) => {
             if c.is_ascii_alphanumeric() {
                 display.set_status_message(&format!("Unknown command '{c}'"));
             } else {
                 display.set_status_message("Unknown command");
             }
         }
-        Quit => player.destroy(),
+        DisplayEvent::Quit => player.destroy(),
     }
 }
 
