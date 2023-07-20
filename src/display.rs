@@ -49,10 +49,8 @@ pub enum DisplayEvent {
     /// The program was requested to mute or unmute the audio.
     ToggleMute,
     /// The program was requested to increase the playback volume.
-    #[allow(dead_code)]
     VolUp,
     /// The program was requested to decrease the playback volume.
-    #[allow(dead_code)]
     VolDown,
     /// The user pressed a key which is not bound to any command.
     Invalid(char),
