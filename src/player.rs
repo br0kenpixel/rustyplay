@@ -27,7 +27,8 @@ pub struct Player {
 impl Player {
     /// Creates a new player from a given file.  
     /// *The playback is paused by default.*
-    pub fn new(file: &str) -> Player {
+    #[allow(clippy::used_underscore_binding)]
+    pub fn new(file: &str) -> Self {
         let (_stream, _stream_handle) =
             OutputStream::try_default().expect("Unable to open audio device");
 
@@ -46,7 +47,7 @@ impl Player {
         sink.pause();
         clock.pause();
 
-        Player {
+        Self {
             _stream,
             _stream_handle,
             sink,

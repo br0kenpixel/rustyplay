@@ -1,7 +1,10 @@
+#![allow(clippy::unused_self)]
+
 use crate::audioinfo::{AudioFile, AudioMeta};
 use crate::lyrics::{LyricsBank, LYRICS_BANK_SIZE};
-use crate::scrolledbuf::*;
+use crate::scrolledbuf::{ScrollDirection, ScrolledBuf};
 use crate::timer::Timer;
+#[allow(clippy::wildcard_imports)]
 use ncurses::*;
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -33,7 +36,7 @@ pub struct Display {
 
 /// Represents different events that occur when
 /// using the keyboard controls.
-#[derive(PartialEq, Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum DisplayEvent {
     /// The program was requested to resume playback.
     MakePlay,
@@ -61,7 +64,7 @@ pub enum DisplayEvent {
 impl Display {
     /// Creates the TUI and initializes [`ncurses`](ncurses).
     /// This function __does not__ draw the static components of the TUI.
-    pub fn new(file: &String) -> Display {
+    pub fn new(file: &str) -> Self {
         let locale_conf = LcCategory::all;
         setlocale(locale_conf, "en_US.UTF-8");
 
@@ -72,7 +75,7 @@ impl Display {
 
         let filename = Path::new(file).file_name().unwrap().to_string_lossy();
 
-        Display {
+        Self {
             infoview: newwin(6, COLS() - 8, INFOVIEW_OFFSET, 4),
             scrolledname: ScrolledBuf::new(filename, COLS() - 8, ScrollDirection::LeftToRight),
             scroll_timer: Timer::new(Duration::from_millis(SCROLL_SHORT_TIME)),
@@ -83,6 +86,7 @@ impl Display {
     /// Checks if the terminal is big enough to display the TUI.
     /// A minimum size of 100x28 is required.  
     /// Sizes >= 100x28 will work and the TUI is adjusted automatically.
+    #[allow(clippy::unused_self)]
     pub fn sizecheck(&self) -> bool {
         LINES() >= 28 && COLS() >= 100
     }
@@ -184,6 +188,7 @@ impl Display {
     }
 
     /// Draws a single keyboard shortcut guide
+    #[allow(clippy::used_underscore_binding)]
     fn print_control(&self, ctl_symbol: char, desc: &str, _continue: bool) {
         self.addstring(&format!("[{ctl_symbol}] {desc}"));
         if _continue {
@@ -210,6 +215,7 @@ impl Display {
     /// if successfull.
     ///
     /// [`DisplayEvent::Invalid`](DisplayEvent::Invalid) is returned.
+    #[allow(clippy::unused_self)]
     pub fn capture_event(&self) -> Option<DisplayEvent> {
         match getch() {
             ERR => None,
@@ -325,8 +331,7 @@ impl Display {
     /// Calculate the progress bar blocks and print them to the TUI.
     pub fn set_progress(&self, played: f64, total_len: f64) {
         let max_block_count = ((COLS() - 12) - 15) - 1;
-        let mut use_blocks =
-            Display::map(played, 0.0, total_len, 0.0, max_block_count as f64) as i32;
+        let mut use_blocks = Self::map(played, 0.0, total_len, 0.0, max_block_count as f64) as i32;
 
         // Constrain
         use_blocks = use_blocks.clamp(0, max_block_count);
@@ -335,6 +340,7 @@ impl Display {
     }
 
     /// Update the file quality display in the TUI.
+    #[allow(clippy::match_bool)]
     pub fn set_file_quality(&self, fileinfo: &AudioFile) {
         self.moveto(6, 4);
         self.addstring(&format!(
@@ -512,15 +518,15 @@ impl Display {
 impl From<char> for DisplayEvent {
     fn from(value: char) -> Self {
         match value {
-            'g' => DisplayEvent::MakePlay,
-            'f' => DisplayEvent::JumpBack,
-            'h' => DisplayEvent::JumpNext,
-            'b' => DisplayEvent::MakePause,
-            'm' => DisplayEvent::ToggleMute,
-            'q' => DisplayEvent::Quit,
-            'y' => DisplayEvent::VolUp,
-            'x' => DisplayEvent::VolDown,
-            c => DisplayEvent::Invalid(c),
+            'g' => Self::MakePlay,
+            'f' => Self::JumpBack,
+            'h' => Self::JumpNext,
+            'b' => Self::MakePause,
+            'm' => Self::ToggleMute,
+            'q' => Self::Quit,
+            'y' => Self::VolUp,
+            'x' => Self::VolDown,
+            c => Self::Invalid(c),
         }
     }
 }

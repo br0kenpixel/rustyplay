@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 /// Represents a timer/countdown.
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Timer {
     /// Time at which the timer was started/created.
     start: Instant,
@@ -13,7 +13,7 @@ pub struct Timer {
 impl Timer {
     /// Creates a new timer with the given duration.
     pub fn new(len: Duration) -> Self {
-        Timer {
+        Self {
             start: Instant::now(),
             len,
         }

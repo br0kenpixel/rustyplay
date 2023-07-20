@@ -1,4 +1,4 @@
-use sndfile::*;
+use sndfile::{ReadOptions, SndFile, TagType};
 use std::path::Path;
 
 /// This structure represents metadata of an Audio file
@@ -11,7 +11,7 @@ pub struct AudioMeta {
 
 /// Identifies an audio file format
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AudioFormat {
     /// Free Lossless Audio Codec
     FLAC,
@@ -99,15 +99,15 @@ impl AudioFormat {
         let ext = Path::new(path).extension().unwrap().to_string_lossy();
 
         match ext.to_lowercase().as_str() {
-            "flac" => Ok(AudioFormat::FLAC),
-            "wav" => Ok(AudioFormat::WAV),
-            "ogg" => Ok(AudioFormat::OGG),
+            "flac" => Ok(Self::FLAC),
+            "wav" => Ok(Self::WAV),
+            "ogg" => Ok(Self::OGG),
             _ => Err(()),
         }
     }
 
-    pub fn is_lossless(&self) -> bool {
-        matches!(self, AudioFormat::FLAC | AudioFormat::WAV)
+    pub const fn is_lossless(self) -> bool {
+        matches!(self, Self::FLAC | Self::WAV)
     }
 }
 
@@ -143,13 +143,13 @@ impl From<SndFile> for AudioMeta {
         Self {
             title: value
                 .get_tag(TagType::Title)
-                .unwrap_or("Unknown".to_owned()),
+                .unwrap_or_else(|| "Unknown".to_owned()),
             album: value
                 .get_tag(TagType::Album)
-                .unwrap_or("Unknown".to_owned()),
+                .unwrap_or_else(|| "Unknown".to_owned()),
             artist: value
                 .get_tag(TagType::Artist)
-                .unwrap_or("Unknown".to_owned()),
+                .unwrap_or_else(|| "Unknown".to_owned()),
         }
     }
 }

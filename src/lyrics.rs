@@ -32,12 +32,12 @@ impl LyricsProcessor {
     /// - [`akashrchandran/spotify-lyrics-api`](https://github.com/akashrchandran/spotify-lyrics-api)
     /// - [`br0kenpixel/spotify-lyrics-api-rust`](https://github.com/br0kenpixel/spotify-lyrics-api-rust)  
     /// `LRC`'s are not supported and likely never will be.
-    pub fn load_file(file: String) -> Result<LyricsProcessor, String> {
+    pub fn load_file(file: String) -> Result<Self, String> {
         let mut lyrics = Lyrics::parse_file(&PathBuf::from(file))
             .map_err(|e| format!("File parse error: {e}"))?;
         lyrics.fix_end_times();
 
-        Ok(LyricsProcessor {
+        Ok(Self {
             lines: lyrics.lines,
         })
     }

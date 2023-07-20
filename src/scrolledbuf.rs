@@ -23,7 +23,7 @@ pub struct ScrolledBuf {
 }
 
 /// Scroll direction
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScrollDirection {
     /// Scroll text from right to left
     RightToLeft,

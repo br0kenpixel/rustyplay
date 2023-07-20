@@ -1,3 +1,13 @@
+#![allow(
+    clippy::similar_names,
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_lossless,
+    clippy::module_name_repetitions
+)]
+
 use std::env;
 use std::process::exit;
 use std::thread::sleep;
@@ -11,10 +21,10 @@ mod player;
 mod scrolledbuf;
 mod timer;
 
-use crate::audioinfo::*;
-use crate::display::*;
-use crate::lyrics::*;
-use crate::player::*;
+use crate::audioinfo::AudioFile;
+use crate::display::{Display, DisplayEvent};
+use crate::lyrics::LyricsProcessor;
+use crate::player::Player;
 
 /// A list of supported audio formats.
 const SUPPORTED_FORMATS: [&str; 3] = ["wav", "flac", "ogg"];
@@ -33,19 +43,19 @@ fn main() {
     }
 
     println!("Launching...");
-    run(args[1].clone());
+    run(&args[1]);
 }
 
 /// Runs the program.
-fn run(file: String) {
+fn run(file: &str) {
     /* Initialize everything first, so the UI doesn't appear laggy/frozen for too long */
-    let afile = AudioFile::new(&file);
-    let player = Player::new(&file);
-    let lyrics = LyricsProcessor::load_file(generate_lyrics_file_name(&file));
+    let afile = AudioFile::new(file);
+    let player = Player::new(file);
+    let lyrics = LyricsProcessor::load_file(generate_lyrics_file_name(file));
     let mut lyrics_bank = None;
 
     /* Start UI */
-    let mut display = Display::new(&file);
+    let mut display = Display::new(file);
 
     display.init();
 
@@ -77,7 +87,7 @@ fn run(file: String) {
                 // SAFETY: We just checked if `lyrics` is `Ok()`.
                 let lp = unsafe { lyrics.as_ref().unwrap_unchecked() };
                 let playtime = player.playtime();
-                let mut bank = lyrics_bank.unwrap_or(lp.get_bank(None));
+                let mut bank = lyrics_bank.unwrap_or_else(|| lp.get_bank(None));
 
                 if bank.is_expired(playtime) && bank.next_available() {
                     bank = lp.get_bank(Some(bank));
@@ -95,10 +105,9 @@ fn run(file: String) {
         display.staus_message_tick();
 
         // Getch will also refresh the display
-        match display.capture_event() {
-            None => (), /* no key was pressed */
-            Some(event) => process_display_event(event, &player, &mut display),
-        }
+        display.capture_event().map_or((), |event| {
+            process_display_event(event, &player, &mut display);
+        });
 
         sleep(Duration::from_millis(10));
     }
@@ -108,6 +117,7 @@ fn run(file: String) {
 }
 
 /// Process the current [`DisplayEvent`](DisplayEvent).
+#[allow(clippy::enum_glob_use)]
 fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Display) {
     use DisplayEvent::*;
 
@@ -131,8 +141,7 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
                 display.set_status_message("Muted");
             }
         }
-        JumpNext => (), //TODO: Implement
-        JumpBack => (), //TODO: Implement
+        JumpNext | JumpBack => (), //TODO: Implement
         VolUp => {
             player.inc_volume();
             display.set_status_message(&format!("+ Volume ({}%)", player.get_volume()));
@@ -142,10 +151,10 @@ fn process_display_event(event: DisplayEvent, player: &Player, display: &mut Dis
             display.set_status_message(&format!("- Volume ({}%)", player.get_volume()));
         }
         Invalid(c) => {
-            if !c.is_ascii_alphanumeric() {
-                display.set_status_message("Unknown command");
-            } else {
+            if c.is_ascii_alphanumeric() {
                 display.set_status_message(&format!("Unknown command '{c}'"));
+            } else {
+                display.set_status_message("Unknown command");
             }
         }
         Quit => player.destroy(),
